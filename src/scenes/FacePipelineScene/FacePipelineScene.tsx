@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
-import { requestEmojiMatch, resolveChatapConfig } from './emojiMatcher'
+import { requestEmojiMatch, resolveChatapConfig, type ChatapConfig } from './emojiMatcher'
 import './facePipeline.css'
 
 type FaceRect = {
@@ -488,7 +488,7 @@ export const FacePipelineScene = () => {
   const faceDetectionActiveRef = useRef(false)
   const faceDetectionRafIdRef = useRef(0)
   const stopLoopRef = useRef<(() => void) | null>(null)
-  const emojiLoopTimerRef = useRef<number | null>(null)
+  const emojiConfigRef = useRef<ChatapConfig | null>(null)
   const emojiBusyRef = useRef(false)
   const emojiCaptureCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const lastFaceDetectedAtRef = useRef(0)
@@ -497,7 +497,86 @@ export const FacePipelineScene = () => {
   const [cameraError, setCameraError] = useState('')
   const [detectorBackend, setDetectorBackend] = useState<DetectorBackend>('none')
   const [emojiGlyph, setEmojiGlyph] = useState('🙂')
-  const [emojiStatus, setEmojiStatus] = useState(isZh ? '等待表情识别' : 'Waiting for emoji match')
+  const [emojiStatus, setEmojiStatus] = useState(isZh ? '点击“识别表情”开始' : 'Click "Detect Emotion" to start')
+  const [emojiLoading, setEmojiLoading] = useState(false)
+
+  const detectorLabel = detectorBackend === 'none'
+    ? (isZh ? '检测器初始化中' : 'Detector initializing')
+    : detectorBackend === 'opencv'
+      ? 'OpenCV'
+      : (isZh ? '浏览器检测器' : 'Browser detector')
+
+  const triggerEmojiMatch = async () => {
+    if (emojiBusyRef.current) return
+
+    const config = emojiConfigRef.current
+    if (!config) {
+      setEmojiStatus(isZh ? '识别服务未就绪' : 'Recognition service is not ready')
+      return
+    }
+
+    if (performance.now() - lastFaceDetectedAtRef.current > 2400) {
+      setEmojiStatus(isZh ? '请先让人脸进入画面再识别' : 'Place your face in frame before detecting')
+      return
+    }
+
+    const video = videoRef.current
+    if (!video || video.readyState < 2) {
+      setEmojiStatus(isZh ? '视频流未就绪，请稍候再试' : 'Video stream not ready, try again shortly')
+      return
+    }
+
+    const vw = video.videoWidth || video.clientWidth
+    const vh = video.videoHeight || video.clientHeight
+    if (!vw || !vh) {
+      setEmojiStatus(isZh ? '视频尺寸不可用，请稍候再试' : 'Video dimensions unavailable, try again shortly')
+      return
+    }
+
+    if (!emojiCaptureCanvasRef.current) {
+      emojiCaptureCanvasRef.current = document.createElement('canvas')
+    }
+
+    const captureCanvas = emojiCaptureCanvasRef.current
+    const captureContext = captureCanvas.getContext('2d', { willReadFrequently: true })
+    if (!captureContext) {
+      setEmojiStatus(isZh ? '采样画布不可用' : 'Capture canvas is not available')
+      return
+    }
+
+    const targetW = Math.min(256, vw)
+    const scale = targetW / vw
+    const targetH = Math.max(1, Math.round(vh * scale))
+    captureCanvas.width = targetW
+    captureCanvas.height = targetH
+
+    try {
+      captureContext.drawImage(video, 0, 0, targetW, targetH)
+    } catch {
+      setEmojiStatus(isZh ? '截图失败，请重试' : 'Snapshot failed, please retry')
+      return
+    }
+
+    const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.78)
+    emojiBusyRef.current = true
+    setEmojiLoading(true)
+    setEmojiStatus(isZh ? '识别中，请稍候...' : 'Recognizing, please wait...')
+
+    try {
+      const emoji = await requestEmojiMatch({ config, imageDataUrl, isZh })
+      if (emoji) {
+        setEmojiGlyph(emoji)
+        setEmojiStatus(isZh ? '识别完成，点击按钮可再次识别' : 'Done. Click the button to detect again')
+      } else {
+        setEmojiStatus(isZh ? '未匹配到结果，点击按钮重试' : 'No match found. Click the button to retry')
+      }
+    } catch {
+      setEmojiStatus(isZh ? '识别请求失败，点击按钮重试' : 'Recognition request failed. Click the button to retry')
+    } finally {
+      emojiBusyRef.current = false
+      setEmojiLoading(false)
+    }
+  }
 
   useEffect(() => {
     setCurrentScene('/scene/face-pipeline')
@@ -627,7 +706,7 @@ export const FacePipelineScene = () => {
       return (env.VITE_CHATAP || scopedWindow.CHATAP || scopedWindow.__CHATAP__ || '').trim()
     }
 
-    const startEmojiMatchLoop = () => {
+    const prepareEmojiMatch = () => {
       const env = import.meta.env as Record<string, string | undefined>
       const chatap = resolveChatapToken()
       const config = resolveChatapConfig({
@@ -639,63 +718,13 @@ export const FacePipelineScene = () => {
       })
 
       if (!config) {
+        emojiConfigRef.current = null
         setEmojiStatus(isZh ? '未配置 CHATAP' : 'CHATAP is not configured')
         return
       }
 
-      setEmojiStatus(isZh ? '表情匹配中' : 'Matching emoji...')
-
-      const tick = async () => {
-        if (emojiBusyRef.current) return
-        if (performance.now() - lastFaceDetectedAtRef.current > 2400) return
-
-        const video = videoRef.current
-        if (!video || video.readyState < 2) return
-
-        const vw = video.videoWidth || video.clientWidth
-        const vh = video.videoHeight || video.clientHeight
-        if (!vw || !vh) return
-
-        if (!emojiCaptureCanvasRef.current) {
-          emojiCaptureCanvasRef.current = document.createElement('canvas')
-        }
-
-        const captureCanvas = emojiCaptureCanvasRef.current
-        const captureContext = captureCanvas.getContext('2d', { willReadFrequently: true })
-        if (!captureContext) return
-
-        const targetW = Math.min(256, vw)
-        const scale = targetW / vw
-        const targetH = Math.max(1, Math.round(vh * scale))
-        captureCanvas.width = targetW
-        captureCanvas.height = targetH
-
-        try {
-          captureContext.drawImage(video, 0, 0, targetW, targetH)
-        } catch {
-          return
-        }
-
-        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.78)
-        emojiBusyRef.current = true
-
-        try {
-          const emoji = await requestEmojiMatch({ config, imageDataUrl, isZh })
-          if (emoji) {
-            setEmojiGlyph(emoji)
-            setEmojiStatus(isZh ? '已匹配' : 'Matched')
-          } else {
-            setEmojiStatus(isZh ? '匹配失败，继续尝试' : 'No match, retrying')
-          }
-        } finally {
-          emojiBusyRef.current = false
-        }
-      }
-
-      void tick()
-      emojiLoopTimerRef.current = window.setInterval(() => {
-        void tick()
-      }, 2800)
+      emojiConfigRef.current = config
+      setEmojiStatus(isZh ? '点击“识别表情”开始' : 'Click "Detect Emotion" to start')
     }
 
     const openCamera = async () => {
@@ -747,16 +776,11 @@ export const FacePipelineScene = () => {
         }, 1200)
 
         startFaceDetectionLoop()
-        startEmojiMatchLoop()
 
         stopLoopRef.current = (() => {
           const previousStop = stopLoopRef.current
           return () => {
             window.clearTimeout(opencvStartupTimeout)
-            if (emojiLoopTimerRef.current !== null) {
-              window.clearInterval(emojiLoopTimerRef.current)
-              emojiLoopTimerRef.current = null
-            }
             if (previousStop) previousStop()
           }
         })()
@@ -766,6 +790,7 @@ export const FacePipelineScene = () => {
       }
     }
 
+    prepareEmojiMatch()
     void openCamera()
 
     return () => {
@@ -774,10 +799,9 @@ export const FacePipelineScene = () => {
         stopLoopRef.current()
         stopLoopRef.current = null
       }
-      if (emojiLoopTimerRef.current !== null) {
-        window.clearInterval(emojiLoopTimerRef.current)
-        emojiLoopTimerRef.current = null
-      }
+      emojiConfigRef.current = null
+      emojiBusyRef.current = false
+      setEmojiLoading(false)
 
       const stream = streamRef.current
       if (stream) {
@@ -810,12 +834,29 @@ export const FacePipelineScene = () => {
 
       <div className="face-lite-status" aria-live="polite">
         <p>{cameraStatus}</p>
-        <p>{detectorBackend}</p>
+        <p>{detectorLabel}</p>
       </div>
 
       <aside className="face-lite-emoji" aria-live="polite">
         <p className="face-lite-emoji-label">{isZh ? '当前最像 emoji' : 'Best matching emoji'}</p>
         <p className="face-lite-emoji-glyph">{emojiGlyph}</p>
+        <button
+          type="button"
+          className="face-lite-emoji-action"
+          onClick={() => {
+            void triggerEmojiMatch()
+          }}
+          disabled={emojiLoading}
+          aria-busy={emojiLoading}
+        >
+          {emojiLoading ? (isZh ? '识别中...' : 'Recognizing...') : (isZh ? '识别表情' : 'Detect Emotion')}
+        </button>
+        {emojiLoading ? (
+          <p className="face-lite-emoji-progress" role="status">
+            <span className="face-lite-spinner" aria-hidden="true" />
+            <span>{isZh ? '正在匹配，请稍候' : 'Matching, please wait'}</span>
+          </p>
+        ) : null}
         <p className="face-lite-emoji-status">{emojiStatus}</p>
       </aside>
 
