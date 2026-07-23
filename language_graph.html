@@ -1,0 +1,262 @@
+<title>语言功能脑连接图谱</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fafbfc;
+    --ink:#1a2230; --muted:#69727f; --line:#e4e8ee; --line-strong:#cfd6df;
+    --accent:#4f7fe0; --node:#8a93a3;
+    --shadow:0 1px 2px rgba(20,30,50,.06),0 8px 24px rgba(20,30,50,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0e1219; --panel:#151b25; --panel-2:#111722;
+      --ink:#e7ecf4; --muted:#939dac; --line:#242e3d; --line-strong:#33405360;
+      --accent:#6d97ee; --node:#5c6675;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);}
+  }
+  :root[data-theme="light"]{ --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fafbfc;
+    --ink:#1a2230; --muted:#69727f; --line:#e4e8ee; --line-strong:#cfd6df; --accent:#4f7fe0; --node:#8a93a3;}
+  :root[data-theme="dark"]{ --bg:#0e1219; --panel:#151b25; --panel-2:#111722;
+    --ink:#e7ecf4; --muted:#939dac; --line:#242e3d; --line-strong:#33405360; --accent:#6d97ee; --node:#5c6675;}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  header{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;
+    align-items:center;gap:14px 22px;background:var(--panel);}
+  .title h1{margin:0;font-size:17px;font-weight:650;letter-spacing:-.01em}
+  .title p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+  .spacer{flex:1 1 auto}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+    padding:5px 11px 5px 9px;border:1px solid var(--line-strong);border-radius:999px;
+    background:var(--panel-2);font-size:12.5px;font-weight:550;color:var(--ink);
+    transition:opacity .15s,border-color .15s;}
+  .chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .chip[aria-pressed="false"]{opacity:.38}
+  .chip:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn{cursor:pointer;border:1px solid var(--line-strong);background:var(--panel-2);color:var(--ink);
+    font:inherit;font-size:12.5px;font-weight:550;padding:6px 12px;border-radius:8px;}
+  .btn:hover{border-color:var(--accent)}
+  main{flex:1 1 auto;display:flex;min-height:0}
+  .canvas-wrap{position:relative;flex:1 1 auto;min-width:0}
+  svg{width:100%;height:100%;display:block;touch-action:none}
+  .edge{fill:none;stroke-width:1.7;opacity:.7;transition:opacity .15s,stroke-width .15s}
+  .edge.dim{opacity:.05}
+  .edge.hot{opacity:1;stroke-width:3.2}
+  .node .shp{stroke:var(--panel);stroke-width:2;cursor:grab;fill:var(--node)}
+  .node.dragging .shp{cursor:grabbing}
+  .node text{font-size:10.5px;font-weight:600;fill:var(--ink);pointer-events:none;paint-order:stroke;
+    stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+  .node.dim{opacity:.12}
+  .node.sel .shp{stroke:var(--accent);stroke-width:3.5}
+  aside{width:360px;flex:0 0 360px;border-left:1px solid var(--line);background:var(--panel);
+    overflow-y:auto;padding:20px;}
+  @media (max-width:840px){main{flex-direction:column}
+    aside{width:auto;flex:0 0 auto;max-height:46%;border-left:none;border-top:1px solid var(--line)}}
+  .panel-empty{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+  .region-name{font-size:18px;font-weight:650;margin:0;letter-spacing:-.01em;text-wrap:balance}
+  .region-sub{color:var(--muted);font-size:12.5px;margin:3px 0 14px}
+  .kv{display:flex;gap:8px;font-size:12px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap}
+  .kv span{background:var(--panel-2);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+  .grp-h{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    font-weight:650;margin:18px 0 8px}
+  .edge-card{border:1px solid var(--line);border-left:3px solid var(--c,var(--line));
+    border-radius:9px;padding:10px 12px;margin-bottom:9px;background:var(--panel-2)}
+  .edge-card .flow{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .edge-card .arr{color:var(--muted)}
+  .rel{font-size:11px;color:var(--muted)}
+  .badge{display:inline-block;font-size:10.5px;font-weight:650;padding:2px 7px;border-radius:5px;color:#fff;background:var(--c,var(--muted))}
+  .meta{margin-top:6px;font-size:11.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .dir{font-weight:650;padding:1px 6px;border-radius:5px;border:1px solid currentColor}
+  .dir.up{color:#c2472f} .dir.down{color:#2f7dc2}
+  :root[data-theme="dark"] .dir.up{color:#f0836b} :root[data-theme="dark"] .dir.down{color:#77b0ef}
+  .quote{margin:7px 0 0;font-size:12px;color:var(--muted);font-style:italic;
+    border-left:2px solid var(--line-strong);padding-left:9px;line-height:1.45}
+  a.pmid{color:var(--accent);text-decoration:none} a.pmid:hover{text-decoration:underline}
+  footer{padding:9px 22px;border-top:1px solid var(--line);background:var(--panel);font-size:11.5px;
+    color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .lg{display:inline-flex;align-items:center;gap:5px}
+  .lg .ln{width:18px;height:0;border-top:2.4px solid var(--muted)} .lg .ln.dash{border-top-style:dashed}
+  .lg .sh{width:11px;height:11px;background:var(--muted)} .lg .sh.dia{transform:rotate(45deg);width:9px;height:9px}
+  .tip{position:fixed;pointer-events:none;z-index:20;background:var(--ink);color:var(--bg);padding:7px 10px;
+    border-radius:7px;font-size:11.5px;max-width:280px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s;line-height:1.4}
+  .tip .tq{opacity:.8;font-style:italic;margin-top:3px}
+</style>
+
+<header>
+  <div class="title">
+    <h1>语言功能脑连接图谱</h1>
+    <p>圆=脑区　菱形=功能/细胞　边=抽取到的连接　颜色=证据类型　箭头=有向　虚线=减弱　· 真实抽取数据</p>
+  </div>
+  <div class="spacer"></div>
+  <div class="filters" id="filters" role="group" aria-label="证据类型过滤"></div>
+  <button class="btn" id="themeBtn" type="button" title="切换明暗">◐</button>
+</header>
+
+<main>
+  <div class="canvas-wrap"><svg id="svg" aria-label="脑连接图谱"></svg></div>
+  <aside id="aside"><div class="panel-empty">点击任意节点<br>查看它的连接与证据</div></aside>
+</main>
+
+<footer id="foot"></footer>
+<div class="tip" id="tip"></div>
+
+<script>
+const G = {"nodes": [{"id": "PBN", "full": "parabrachial nucleus", "acr": "PBN", "type": "region", "label": "PBN", "zh": "臂旁核"}, {"id": "vocalization", "full": "vocalization", "acr": null, "type": "function", "label": "vocalization", "zh": "发声"}, {"id": "temporal cortex", "full": "temporal cortex", "acr": null, "type": "region", "label": "temporal cortex", "zh": "颞叶皮层"}, {"id": "speech_production", "full": "speech_production", "acr": null, "type": "function", "label": "speech_production", "zh": "言语产生"}, {"id": "precuneus", "full": "precuneus", "acr": null, "type": "region", "label": "precuneus", "zh": "楔前叶"}, {"id": "episodic_memory", "full": "episodic_memory", "acr": null, "type": "function", "label": "episodic_memory", "zh": "情景记忆"}, {"id": "LPFC", "full": "lateral prefrontal cortex", "acr": "LPFC", "type": "region", "label": "LPFC", "zh": "外侧前额叶皮层"}, {"id": "multisensory_integration", "full": "multisensory_integration", "acr": null, "type": "function", "label": "multisensory_integr…", "zh": "多感觉整合"}, {"id": "motor thalamus", "full": "motor thalamus", "acr": null, "type": "region", "label": "motor thalamus", "zh": "运动丘脑"}, {"id": "NCC", "full": "caudocentral nidopallium", "acr": "NCC", "type": "region", "label": "NCC", "zh": "尾中央巢皮层"}, {"id": "auditory_discrimination", "full": "auditory_discrimination", "acr": null, "type": "function", "label": "auditory_discrimina…", "zh": "听觉辨别"}, {"id": "STG", "full": "superior temporal gyrus", "acr": "STG", "type": "region", "label": "STG", "zh": "颞上回"}, {"id": "speech_perception", "full": "speech_perception", "acr": null, "type": "function", "label": "speech_perception", "zh": "言语知觉"}, {"id": "pars opercularis", "full": "pars opercularis", "acr": null, "type": "region", "label": "pars opercularis", "zh": "岛盖部"}, {"id": "frontal cortex", "full": "frontal cortex", "acr": null, "type": "region", "label": "frontal cortex", "zh": "额叶皮层"}, {"id": "thalamus", "full": "thalamus", "acr": null, "type": "region", "label": "thalamus", "zh": "丘脑"}, {"id": "motor_learning", "full": "motor_learning", "acr": null, "type": "function", "label": "motor_learning", "zh": "运动学习"}, {"id": "VWFA", "full": "visual word form area", "acr": "VWFA", "type": "region", "label": "VWFA", "zh": "视觉词形区"}, {"id": "reading", "full": "reading", "acr": null, "type": "function", "label": "reading", "zh": "阅读"}, {"id": "cerebellum", "full": "cerebellum", "acr": null, "type": "region", "label": "cerebellum", "zh": "小脑"}, {"id": "primary somatosensory cortex", "full": "primary somatosensory cortex", "acr": null, "type": "region", "label": "primary somatosenso…", "zh": "初级体感皮层"}, {"id": "VTC", "full": "ventral temporal cortex", "acr": "VTC", "type": "region", "label": "VTC", "zh": "腹侧颞叶皮层"}, {"id": "object_recognition", "full": "object_recognition", "acr": null, "type": "function", "label": "object_recognition", "zh": "物体识别"}, {"id": "SLF", "full": "superior longitudinal fasciculus", "acr": "SLF", "type": "region", "label": "SLF", "zh": "上纵束"}, {"id": "language", "full": "language", "acr": null, "type": "function", "label": "language", "zh": "语言"}, {"id": "supramarginal gyrus", "full": "supramarginal gyrus", "acr": null, "type": "region", "label": "supramarginal gyrus", "zh": "缘上回"}, {"id": "preoptic area", "full": "preoptic area", "acr": null, "type": "region", "label": "preoptic area", "zh": "视前区"}, {"id": "PAG", "full": "periaqueductal gray", "acr": "PAG", "type": "region", "label": "PAG", "zh": "导水管周围灰质"}, {"id": "parahippocampal gyrus", "full": "parahippocampal gyrus", "acr": null, "type": "region", "label": "parahippocampal gyr…", "zh": "海马旁回"}, {"id": "semantic_processing", "full": "semantic_processing", "acr": null, "type": "function", "label": "semantic_processing", "zh": "语义加工"}, {"id": "insula", "full": "insula", "acr": null, "type": "region", "label": "insula", "zh": "岛叶"}, {"id": "MEC", "full": "medial entorhinal cortex", "acr": "MEC", "type": "region", "label": "MEC", "zh": "内侧内嗅皮层"}, {"id": "CA1", "full": "hippocampus", "acr": "CA1", "type": "region", "label": "CA1", "zh": "海马"}, {"id": "spatial_memory", "full": "spatial_memory", "acr": null, "type": "function", "label": "spatial_memory", "zh": "空间记忆"}, {"id": "prefrontal cortex", "full": "prefrontal cortex", "acr": null, "type": "region", "label": "prefrontal cortex", "zh": "前额叶皮层"}, {"id": "auditory_attention", "full": "auditory_attention", "acr": null, "type": "function", "label": "auditory_attention", "zh": "听觉注意"}, {"id": "superior temporal gyrus", "full": "superior temporal gyrus", "acr": null, "type": "region", "label": "superior temporal g…", "zh": "颞上回"}, {"id": "RACC", "full": "rostral anterior cingulate cortex", "acr": "rACC", "type": "region", "label": "rACC", "zh": "吻侧前扣带皮层"}, {"id": "hypothalamus", "full": "hypothalamus", "acr": null, "type": "region", "label": "hypothalamus", "zh": "下丘脑"}, {"id": "appetite_control", "full": "appetite_control", "acr": null, "type": "function", "label": "appetite_control", "zh": "食欲控制"}, {"id": "MFG", "full": "middle frontal gyrus", "acr": "MFG", "type": "region", "label": "MFG", "zh": "额中回"}, {"id": "POCG", "full": "postcentral gyrus", "acr": "PoCG", "type": "region", "label": "PoCG", "zh": "中央后回"}, {"id": "lateral temporal cortex", "full": "lateral temporal cortex", "acr": null, "type": "region", "label": "lateral temporal co…", "zh": "外侧颞叶皮层"}, {"id": "action_perception", "full": "action_perception", "acr": null, "type": "function", "label": "action_perception", "zh": "动作知觉"}, {"id": "PGACC", "full": "pregenual anterior cingulate cortex", "acr": "pgACC", "type": "region", "label": "pgACC", "zh": "膝前扣带皮层"}, {"id": "putamen", "full": "putamen", "acr": null, "type": "region", "label": "putamen", "zh": "壳核"}, {"id": "gait_control", "full": "gait_control", "acr": null, "type": "function", "label": "gait_control", "zh": "步态控制"}, {"id": "caudate nucleus", "full": "caudate nucleus", "acr": null, "type": "region", "label": "caudate nucleus", "zh": "尾状核"}, {"id": "dentate nucleus", "full": "dentate nucleus", "acr": null, "type": "region", "label": "dentate nucleus", "zh": "齿状核"}, {"id": "angular gyrus", "full": "angular gyrus", "acr": null, "type": "region", "label": "angular gyrus", "zh": "角回"}, {"id": "spatial_navigation", "full": "spatial_navigation", "acr": null, "type": "function", "label": "spatial_navigation", "zh": "空间导航"}, {"id": "SMA", "full": "supplementary motor area", "acr": "SMA", "type": "region", "label": "SMA", "zh": "辅助运动区"}, {"id": "PFO", "full": "prefrontal operculum", "acr": "PFO", "type": "region", "label": "PFO", "zh": "前额叶岛盖"}, {"id": "S1", "full": "primary somatosensory cortex", "acr": "S1", "type": "region", "label": "S1", "zh": "初级体感皮层"}, {"id": "VCA1", "full": "ventral CA1", "acr": "vCA1", "type": "region", "label": "vCA1", "zh": "腹侧CA1"}, {"id": "BLA", "full": "basolateral amygdala", "acr": "BLA", "type": "region", "label": "BLA", "zh": "基底外侧杏仁核"}, {"id": "hippocampus", "full": "hippocampus", "acr": null, "type": "region", "label": "hippocampus", "zh": "海马"}, {"id": "anxiety_reduction", "full": "anxiety_reduction", "acr": null, "type": "function", "label": "anxiety_reduction", "zh": "焦虑缓解"}, {"id": "posterior cingulate cortex", "full": "posterior cingulate cortex", "acr": null, "type": "region", "label": "posterior cingulate…", "zh": "后扣带皮层"}, {"id": "working_memory", "full": "working_memory", "acr": null, "type": "function", "label": "working_memory", "zh": "工作记忆"}, {"id": "dorsolateral prefrontal cortex", "full": "dorsolateral prefrontal cortex", "acr": null, "type": "region", "label": "dorsolateral prefro…", "zh": "背外侧前额叶皮层"}], "links": [{"s": "PBN", "t": "vocalization", "relation": "encodes", "evidence_type": "other", "directed": true, "direction": "na", "species": "other", "quote": "parabrachial nucleus, a vocal premotor hindbrain area known to encode species-typical temporal patterns in X. laevis and X. petersii", "confidence": 0.85, "pmid": "42484870"}, {"s": "temporal cortex", "t": "speech_production", "relation": "involved_in", "evidence_type": "lesion_deficit", "directed": true, "direction": "na", "species": "human", "quote": "word-level spoken language behaviours were associated with discrete left temporo-parietal, using voxel-based correlational methodology", "confidence": 0.8, "pmid": "42482844"}, {"s": "precuneus", "t": "episodic_memory", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "Default Mode Network (DMN), a key brain network involved in episodic memory where the precuneus plays a central role", "confidence": 0.85, "pmid": "42482244"}, {"s": "LPFC", "t": "multisensory_integration", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "The lateral prefrontal cortex (LPFC) receives visual, auditory, and somatosensory information and has extensive local neural connections across different sensory regions", "confidence": 0.8, "pmid": "42474200"}, {"s": "motor thalamus", "t": "speech_production", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "human", "quote": "low-frequency DBS improved facial movement, swallowing efficiency, and speech intelligibility across respiratory, phonatory, and articulatory subsystems", "confidence": 0.85, "pmid": "42471326"}, {"s": "NCC", "t": "auditory_discrimination", "relation": "involved_in", "evidence_type": "coactivation", "directed": true, "direction": "na", "species": "other", "quote": "females exposed to normal song exhibited significantly higher expression of both IEGs as compared to females exposed to Parkinsonian-like song in the NCC", "confidence": 0.85, "pmid": "42468671"}, {"s": "STG", "t": "speech_perception", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "Morphometric results revealed more consistent listening was associated with greater cortical thickness in right superior temporal gyrus", "confidence": 0.8, "pmid": "42465391"}, {"s": "pars opercularis", "t": "speech_perception", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "more gradient listening was associated with greater surface area in right pars opercularis", "confidence": 0.8, "pmid": "42465391"}, {"s": "frontal cortex", "t": "thalamus", "relation": "projects_to", "evidence_type": "causal_manipulation", "directed": true, "direction": "na", "species": "other", "quote": "Optogenetic activation of the frontal L5-thalamus pathway had strong impact on thalamic spiking even at high stimulation frequencies", "confidence": 0.85, "pmid": "42465354"}, {"s": "frontal cortex", "t": "motor_learning", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "na", "species": "other", "quote": "Optogenetic interference with the small L5-thalamic pathway perturbed motor learning", "confidence": 0.85, "pmid": "42465354"}, {"s": "VWFA", "t": "reading", "relation": "involved_in", "evidence_type": "functional_connectivity", "directed": true, "direction": "na", "species": "human", "quote": "during lexical decision it was the posterior VWFA-1 rather than the anterior VWFA-2 that increased its coupling with the language network", "confidence": 0.8, "pmid": "42464270"}, {"s": "cerebellum", "t": "primary somatosensory cortex", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "increase", "species": "human", "quote": "increased directed connectivity from the cerebellum to the primary somatosensory cortex", "confidence": 0.85, "pmid": "42463451"}, {"s": "VTC", "t": "object_recognition", "relation": "involved_in", "evidence_type": "coactivation", "directed": true, "direction": "na", "species": "human", "quote": "specifically within ventral temporal cortex (VTC), which is thought to support object recognition", "confidence": 0.85, "pmid": "42462854"}, {"s": "SLF", "t": "language", "relation": "involved_in", "evidence_type": "functional_connectivity", "directed": true, "direction": "na", "species": "human", "quote": "Partial correlations linked mean kurtosis in the superior longitudinal fasciculus to language", "confidence": 0.8, "pmid": "42457991"}, {"s": "supramarginal gyrus", "t": "speech_perception", "relation": "involved_in", "evidence_type": "lesion_deficit", "directed": true, "direction": "na", "species": "human", "quote": "Speech-in-noise perceptual performance correlated with grey matter atrophy in the right supramarginal gyrus", "confidence": 0.85, "pmid": "42446245"}, {"s": "preoptic area", "t": "PAG", "relation": "connected_with", "evidence_type": "other", "directed": false, "direction": "na", "species": "mouse", "quote": "absence of vocalizations during the male-female interaction test associated with a drastic degeneration of the preoptic area-periaqueductal gray vocal GABAergic circuit", "confidence": 0.8, "pmid": "42443391"}, {"s": "parahippocampal gyrus", "t": "semantic_processing", "relation": "involved_in", "evidence_type": "coactivation", "directed": true, "direction": "na", "species": "human", "quote": "source localization results not only verified the classical language network, but also found the involvement of the limbic system (such as the parahippocampal gyrus and insula)", "confidence": 0.85, "pmid": "42442562"}, {"s": "insula", "t": "semantic_processing", "relation": "involved_in", "evidence_type": "coactivation", "directed": true, "direction": "na", "species": "human", "quote": "source localization results not only verified the classical language network, but also found the involvement of the limbic system (such as the parahippocampal gyrus and insula)", "confidence": 0.85, "pmid": "42442562"}, {"s": "PBN", "t": "vocalization", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "other", "quote": "In male X. laevis, fast trills are generated by premotor neurons in the parabrachial nucleus (PBN), known as fast trill neurons (FTNs)", "confidence": 0.85, "pmid": "42441974"}, {"s": "MEC", "t": "CA1", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "decrease", "species": "mouse", "quote": "reduced hippocampal theta power, reduced MEC-CA1 theta coherence, and altered phase locking of MEC and hippocampal neurons all coincide with the emergence of spatial memory impairment", "confidence": 0.85, "pmid": "42441402"}, {"s": "MEC", "t": "spatial_memory", "relation": "involved_in", "evidence_type": "functional_connectivity", "directed": true, "direction": "decrease", "species": "mouse", "quote": "reduced hippocampal theta power, reduced MEC-CA1 theta coherence, and altered phase locking of MEC and hippocampal neurons all coincide with the emergence of spatial memory impairment", "confidence": 0.8, "pmid": "42441402"}, {"s": "prefrontal cortex", "t": "auditory_attention", "relation": "involved_in", "evidence_type": "coactivation", "directed": true, "direction": "increase", "species": "human", "quote": "Small ITDs led to greater activity in prefrontal cortex and activity in superior temporal gyrus that was lateralized", "confidence": 0.85, "pmid": "42439160"}, {"s": "superior temporal gyrus", "t": "auditory_attention", "relation": "involved_in", "evidence_type": "coactivation", "directed": true, "direction": "na", "species": "human", "quote": "Small ITDs led to greater activity in prefrontal cortex and activity in superior temporal gyrus that was lateralized", "confidence": 0.85, "pmid": "42439160"}, {"s": "RACC", "t": "PAG", "relation": "modulates", "evidence_type": "functional_connectivity", "directed": true, "direction": "decrease", "species": "human", "quote": "showing hyper-responsivity of nociceptive networks with dysregulated prefrontal engagement and weakened rostral anterior cingulate cortex (rACC)-PAG/brainstem descending modulation", "confidence": 0.85, "pmid": "42437468"}, {"s": "hypothalamus", "t": "appetite_control", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "other", "quote": "In the central nervous system, hypothalamic primary cilia regulate appetite and energy expenditure through ADCY3/MC4R and BBSome modules", "confidence": 0.85, "pmid": "42436646"}, {"s": "MFG", "t": "POCG", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "increase", "species": "human", "quote": "only prosody training enhanced connectivity between the middle frontal gyrus (MFG) and postcentral gyrus (PoCG)-regions supporting motor planning and sensorimotor integration", "confidence": 0.9, "pmid": "42436280"}, {"s": "lateral temporal cortex", "t": "action_perception", "relation": "selective_for", "evidence_type": "coactivation", "directed": true, "direction": "na", "species": "human", "quote": "our results further demonstrate that limb-selective regions in the lateral temporal lobe shrink as well, particularly in the left hemisphere", "confidence": 0.8, "pmid": "42435228"}, {"s": "PGACC", "t": "vocalization", "relation": "encodes", "evidence_type": "causal_manipulation", "directed": true, "direction": "na", "species": "monkey", "quote": "functional MRI has identified robust selectivity for conspecific vocalizations in the pregenual anterior cingulate cortex (pgACC; area 32)", "confidence": 0.9, "pmid": "42431832"}, {"s": "putamen", "t": "gait_control", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "Lower putaminal DAT availability was associated with greater stance time and double-support time variability", "confidence": 0.85, "pmid": "42430674"}, {"s": "caudate nucleus", "t": "gait_control", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "whereas lower caudate DAT availability was associated with longer swing and single-support time and altered phase parameters", "confidence": 0.85, "pmid": "42430674"}, {"s": "dentate nucleus", "t": "speech_production", "relation": "involved_in", "evidence_type": "lesion_deficit", "directed": true, "direction": "na", "species": "human", "quote": "Brain magnetic resonance imaging showed hyperintensity in the dentate nuclei of the cerebellum, consistent with metronidazole-induced neurotoxicity", "confidence": 0.8, "pmid": "42428712"}, {"s": "angular gyrus", "t": "spatial_navigation", "relation": "involved_in", "evidence_type": "functional_connectivity", "directed": true, "direction": "increase", "species": "human", "quote": "Increased dReHo variability in the right angular gyrus and bilateral supplementary motor areas represents a potential neural mechanism underlying cognitive decline and spatial navigation deficits", "confidence": 0.85, "pmid": "42427047"}, {"s": "SMA", "t": "spatial_navigation", "relation": "involved_in", "evidence_type": "functional_connectivity", "directed": true, "direction": "increase", "species": "human", "quote": "Increased dReHo variability in the right angular gyrus and bilateral supplementary motor areas represents a potential neural mechanism underlying cognitive decline and spatial navigation deficits", "confidence": 0.85, "pmid": "42427047"}, {"s": "PFO", "t": "speech_production", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "evidence suggests that the prefrontal operculum (PFO) plays a pivotal role in the emergence of speech abilities in the genus Homo", "confidence": 0.85, "pmid": "42426289"}, {"s": "cerebellum", "t": "S1", "relation": "modulates", "evidence_type": "causal_manipulation", "directed": true, "direction": "na", "species": "mouse", "quote": "We investigated the immediate and long-term effects of Cb-tDCS on sensory-evoked responses in the cerebellum and primary somatosensory cortex (S1) of awake mice", "confidence": 0.85, "pmid": "42426098"}, {"s": "VCA1", "t": "BLA", "relation": "projects_to", "evidence_type": "other", "directed": true, "direction": "increase", "species": "other", "quote": "valence updating depends on enhanced synaptic connectivity and physiological changes within the hippocampal ventral CA1 (vCA1)-basolateral amygdala (BLA)-nucleus accumbens (NAc) circuit", "confidence": 0.85, "pmid": "42424460"}, {"s": "hippocampus", "t": "anxiety_reduction", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "mouse", "quote": "skeletal muscle-derived RPLP2 exerts its anxiolytic effects by facilitating hippocampal neurogenesis", "confidence": 0.8, "pmid": "42423553"}, {"s": "posterior cingulate cortex", "t": "working_memory", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "TLE patients exhibited macroscopic morphological changes in the posterior cingulate cortex and dorsolateral prefrontal cortex, which were associated with cognitive impairments such as processing speed and working memory", "confidence": 0.85, "pmid": "42423494"}, {"s": "dorsolateral prefrontal cortex", "t": "working_memory", "relation": "involved_in", "evidence_type": "other", "directed": true, "direction": "na", "species": "human", "quote": "TLE patients exhibited macroscopic morphological changes in the posterior cingulate cortex and dorsolateral prefrontal cortex, which were associated with cognitive impairments such as processing speed and working memory", "confidence": 0.85, "pmid": "42423494"}]};
+const ECOL={anatomical_projection:"#4f7fe0",functional_connectivity:"#dd9a2f",causal_manipulation:"#e05a58",
+  structural_connectivity:"#1f9e97",coactivation:"#9c76d8",lesion_deficit:"#d1699e",correlation:"#c9a24b",other:"#8a93a3"};
+const ELAB={anatomical_projection:"解剖投射",functional_connectivity:"功能连接",causal_manipulation:"因果操纵",
+  structural_connectivity:"结构连接",coactivation:"共激活",lesion_deficit:"损伤缺陷",correlation:"相关性",other:"其他"};
+const RLAB={projects_to:"投射至",connected_with:"连接",modulates:"调制",encodes:"编码",
+  selective_for:"选择性",necessary_for:"必需",involved_in:"参与",correlated_with:"相关"};
+const ecol=t=>ECOL[t]||ECOL.other, elab=t=>ELAB[t]||t, rlab=r=>RLAB[r]||r;
+
+const nodeById={};
+const N=G.nodes.map(nd=>{const o=Object.assign({},nd,{deg:0,x:0,y:0,vx:0,vy:0,fx:null,fy:null});nodeById[nd.id]=o;return o;});
+const links=G.links.map(l=>Object.assign({},l,{s:nodeById[l.s],t:nodeById[l.t]})).filter(l=>l.s&&l.t);
+links.forEach(l=>{l.s.deg++;l.t.deg++;});
+const ETYPES=[...new Set(links.map(l=>l.evidence_type))].sort((a,b)=>
+  links.filter(l=>l.evidence_type===b).length-links.filter(l=>l.evidence_type===a).length);
+const active=new Set(ETYPES);
+let selected=null;
+
+const svg=document.getElementById("svg"),SVGNS="http://www.w3.org/2000/svg";
+let W=900,H=600;
+const defs=document.createElementNS(SVGNS,"defs");
+ETYPES.forEach(t=>{const m=document.createElementNS(SVGNS,"marker");
+  m.setAttribute("id","arw-"+t);m.setAttribute("viewBox","0 0 10 10");m.setAttribute("refX","9");
+  m.setAttribute("refY","5");m.setAttribute("markerWidth","6");m.setAttribute("markerHeight","6");
+  m.setAttribute("orient","auto-start-reverse");
+  const p=document.createElementNS(SVGNS,"path");p.setAttribute("d","M0 0 L10 5 L0 10 z");
+  p.setAttribute("fill",ecol(t));m.appendChild(p);defs.appendChild(m);});
+svg.appendChild(defs);
+const gEdges=document.createElementNS(SVGNS,"g"),gNodes=document.createElementNS(SVGNS,"g");
+svg.appendChild(gEdges);svg.appendChild(gNodes);
+
+const edgeEls=links.map(l=>{const p=document.createElementNS(SVGNS,"path");
+  p.setAttribute("class","edge");p.setAttribute("stroke",ecol(l.evidence_type));
+  if(l.directed)p.setAttribute("marker-end","url(#arw-"+l.evidence_type+")");
+  if(l.direction==="decrease")p.setAttribute("stroke-dasharray","5 4");
+  p.addEventListener("mouseenter",e=>showTip(e,l));p.addEventListener("mousemove",moveTip);
+  p.addEventListener("mouseleave",hideTip);gEdges.appendChild(p);return p;});
+N.forEach(n=>{const g=document.createElementNS(SVGNS,"g");g.setAttribute("class","node");
+  const r=6+Math.min(n.deg,8)*1.5;let shp;
+  if(n.type==="region"){shp=document.createElementNS(SVGNS,"circle");shp.setAttribute("r",r);}
+  else{shp=document.createElementNS(SVGNS,"rect");const s=r*1.7;shp.setAttribute("x",-s/2);
+    shp.setAttribute("y",-s/2);shp.setAttribute("width",s);shp.setAttribute("height",s);
+    shp.setAttribute("transform","rotate(45)");shp.setAttribute("rx",1.5);}
+  shp.setAttribute("class","shp");
+  g.appendChild(shp);
+  if(n.deg>=2){const t=document.createElementNS(SVGNS,"text");t.setAttribute("text-anchor","middle");
+    t.setAttribute("dy",-(r+4));t.textContent=n.label;g.appendChild(t);}   // 叶子节点不常显标签，悬停再显
+  gNodes.appendChild(g);
+  g.addEventListener("pointerdown",e=>startDrag(e,n,g));g.addEventListener("click",()=>select(n));
+  g.addEventListener("mouseenter",e=>showNodeTip(e,n));g.addEventListener("mousemove",moveTip);
+  g.addEventListener("mouseleave",hideTip);
+  n._g=g;});
+
+const REP=3200+N.length*55;   // 斥力随节点数增强，大图铺得更开更圆
+function simulate(iter){for(let k=0;k<iter;k++){
+  for(const a of N){for(const b of N){if(a===b)continue;
+    let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2);const rep=REP/d2;
+    a.vx+=dx/d*rep;a.vy+=dy/d*rep;}
+    a.vx+=(W/2-a.x)*.0035;a.vy+=(H/2-a.y)*.0035;}
+  for(const l of links){let dx=l.t.x-l.s.x,dy=l.t.y-l.s.y,d=Math.sqrt(dx*dx+dy*dy)+.01;
+    const f=(d-95)*.02;l.s.vx+=dx/d*f;l.s.vy+=dy/d*f;l.t.vx-=dx/d*f;l.t.vy-=dy/d*f;}
+  for(const a of N){if(a.fx!=null){a.x=a.fx;a.y=a.fy;a.vx=a.vy=0;continue;}
+    a.x+=a.vx*.5;a.y+=a.vy*.5;a.vx*=.82;a.vy*=.82;}}}   // 不硬夹边界，交给 fitView 缩放到视口
+
+function fitView(padT,padX,padB){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const n of N){x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);}
+  const gw=Math.max(x1-x0,1),gh=Math.max(y1-y0,1);
+  const s=Math.min((W-2*padX)/gw,(H-padT-padB)/gh);
+  const ox=(W-gw*s)/2-x0*s, oy=padT-y0*s;
+  for(const n of N){n.x=n.x*s+ox;n.y=n.y*s+oy;}
+}
+
+function render(){
+  links.forEach((l,i)=>{const on=active.has(l.evidence_type),rel=selected&&(l.s===selected||l.t===selected);
+    const e=edgeEls[i];e.style.display=on?"":"none";
+    e.setAttribute("class","edge"+(!on?"":selected?(rel?" hot":" dim"):""));
+    const sx=l.s.x,sy=l.s.y,tx=l.t.x,ty=l.t.y,mx=(sx+tx)/2,my=(sy+ty)/2,dx=tx-sx,dy=ty-sy,nl=Math.hypot(dx,dy)||1;
+    const cx=mx-dy/nl*16,cy=my+dx/nl*16;e.setAttribute("d",`M${sx} ${sy} Q${cx} ${cy} ${tx} ${ty}`);});
+  N.forEach(n=>{const vis=links.some(l=>(l.s===n||l.t===n)&&active.has(l.evidence_type));
+    n._g.style.display=vis?"":"none";let cls="node";
+    if(selected){if(n===selected)cls+=" sel";
+      else if(!links.some(l=>active.has(l.evidence_type)&&((l.s===selected&&l.t===n)||(l.t===selected&&l.s===n))))cls+=" dim";}
+    n._g.setAttribute("class",cls);n._g.setAttribute("transform",`translate(${n.x} ${n.y})`);});
+}
+
+let drag=null;
+function startDrag(e,n,g){e.stopPropagation();drag={n,g};g.classList.add("dragging");
+  n.fx=n.x;n.fy=n.y;g.setPointerCapture(e.pointerId);}
+svg.addEventListener("pointermove",e=>{if(!drag)return;const pt=toSvg(e.clientX,e.clientY);
+  drag.n.x=drag.n.fx=pt.x;drag.n.y=drag.n.fy=pt.y;render();});
+svg.addEventListener("pointerup",()=>{if(!drag)return;drag.g.classList.remove("dragging");
+  drag.n.fx=drag.n.fy=null;drag=null;});   // 释放即停留，不再重排，保持已适配好的布局
+function toSvg(cx,cy){const r=svg.getBoundingClientRect();return{x:(cx-r.left)/r.width*W,y:(cy-r.top)/r.height*H};}
+
+function select(n){selected=n;render();renderPanel(n);}
+function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function renderPanel(n){
+  const out=links.filter(l=>l.s===n&&active.has(l.evidence_type));
+  const inc=links.filter(l=>l.t===n&&active.has(l.evidence_type));
+  const card=(l,incoming)=>{const other=incoming?l.s:l.t,c=ecol(l.evidence_type);
+    const dirTag=l.direction==="increase"?`<span class="dir up">▲ 增强</span>`:
+      l.direction==="decrease"?`<span class="dir down">▼ 减弱</span>`:"";
+    return `<div class="edge-card" style="--c:${c}">
+      <div class="flow"><span>${esc(l.s.label)}</span>
+        <span class="arr">${l.directed?"→":"—"}</span><span>${esc(l.t.label)}</span>
+        <span class="badge" style="--c:${c}">${elab(l.evidence_type)}</span></div>
+      <div class="rel">${rlab(l.relation)}${dirTag?" · ":""}</div>
+      <div class="meta">${dirTag}<span>${esc(l.species)}</span>
+        ${l.confidence!=null?`<span>conf ${l.confidence}</span>`:""}
+        <a class="pmid" href="https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/" target="_blank" rel="noopener">PMID ${l.pmid}</a></div>
+      <p class="quote">"${esc(l.quote)}"</p></div>`;};
+  document.getElementById("aside").innerHTML=`
+    <h2 class="region-name">${esc(n.zh||n.full)}</h2>
+    <div class="region-sub mono">${esc(n.full)}${n.acr?" · "+esc(n.acr):""} · ${n.type==="region"?"脑区":"细胞类型/功能"}</div>
+    <div class="kv"><span>输出 ${out.length}</span><span>输入 ${inc.length}</span><span>度 ${n.deg}</span></div>
+    ${out.length?`<div class="grp-h">输出连接 · OUTGOING</div>${out.map(l=>card(l,false)).join("")}`:""}
+    ${inc.length?`<div class="grp-h">输入连接 · INCOMING</div>${inc.map(l=>card(l,true)).join("")}`:""}
+    ${!out.length&&!inc.length?`<div class="panel-empty">当前过滤下无可见连接</div>`:""}`;
+}
+
+const fbox=document.getElementById("filters");
+ETYPES.forEach(t=>{const cnt=links.filter(l=>l.evidence_type===t).length;
+  const b=document.createElement("button");b.className="chip";b.type="button";
+  b.setAttribute("aria-pressed","true");b.style.setProperty("--c",ecol(t));
+  b.innerHTML=`<span class="dot"></span>${elab(t)} <span style="color:var(--muted)">${cnt}</span>`;
+  b.onclick=()=>{if(active.has(t)){active.delete(t);b.setAttribute("aria-pressed","false");}
+    else{active.add(t);b.setAttribute("aria-pressed","true");}
+    if(selected)renderPanel(selected);render();};fbox.appendChild(b);});
+
+const tip=document.getElementById("tip");
+function showTip(e,l){tip.innerHTML=`<b>${esc(l.s.label)} ${l.directed?"→":"—"} ${esc(l.t.label)}</b> · ${elab(l.evidence_type)}<br>${rlab(l.relation)} · ${esc(l.species)}<div class="tq">"${esc(l.quote)}"</div>`;tip.style.opacity=1;moveTip(e);}
+function showNodeTip(e,n){if(drag)return;tip.innerHTML=`<b>${esc(n.zh||n.full)}</b><br><span style="opacity:.8">${esc(n.full)}${n.acr?" · "+esc(n.acr):""}</span><br>${n.type==="region"?"脑区":"细胞类型/功能"} · 度 ${n.deg}`;tip.style.opacity=1;moveTip(e);}
+function moveTip(e){tip.style.left=Math.min(e.clientX+14,innerWidth-290)+"px";tip.style.top=(e.clientY+14)+"px";}
+function hideTip(){tip.style.opacity=0;}
+
+document.getElementById("foot").innerHTML=
+  `<span>${N.length} 个节点 · ${links.length} 条连接</span>`+
+  `<span class="lg"><span class="sh"></span>脑区</span>`+
+  `<span class="lg"><span class="sh dia"></span>功能/细胞</span>`+
+  `<span class="lg"><span class="ln"></span>有向(投射/调制)</span>`+
+  `<span class="lg"><span class="ln dash"></span>减弱</span>`+
+  `<span class="spacer" style="flex:1"></span><span>数据来源 PubMed 摘要抽取 · 点节点看证据引文与 PMID</span>`;
+
+document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")
+  ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+  document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");};
+
+let anim=null;
+function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:900;H=r.height>50?r.height:600;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);}
+function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
+  n.x=W/2+Math.cos(a)*Math.min(W,H)*0.35;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.3;});
+  simulate(600);fitView(56,54,34);render();}
+addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
+requestAnimationFrame(()=>requestAnimationFrame(init));
+</script>
