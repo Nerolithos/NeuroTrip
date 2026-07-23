@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   extractEmojiFromText,
   parseEmojiFromChatResponse,
+  parseEmojiReasonFromChatResponse,
   pickModelCandidates,
   resolveChatapConfig,
 } from '../../src/scenes/FacePipelineScene/emojiMatcher.js'
@@ -22,6 +23,23 @@ test('parseEmojiFromChatResponse parses JSON emoji field first', () => {
     ],
   }
   assert.equal(parseEmojiFromChatResponse(response), '🤔')
+})
+
+test('parseEmojiReasonFromChatResponse parses reason from JSON content', () => {
+  const response = {
+    choices: [
+      {
+        message: {
+          content: '{"emoji":"🙂","reason":"Mouth corners lift slightly, brows stay relaxed, and gaze remains steady."}',
+        },
+      },
+    ],
+  }
+
+  assert.equal(
+    parseEmojiReasonFromChatResponse(response),
+    'Mouth corners lift slightly, brows stay relaxed, and gaze remains steady.',
+  )
 })
 
 test('pickModelCandidates keeps user model first and appends fallback', () => {

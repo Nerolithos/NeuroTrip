@@ -188,6 +188,15 @@
   font-size: clamp(0.58rem, 1vw, 0.76rem);
 }
 
+.face-lite-emoji-cognition {
+  margin: 0.34rem 0 0;
+  color: rgba(191, 238, 216, 0.88);
+  font-family: var(--font-mono);
+  font-size: clamp(0.54rem, 0.95vw, 0.7rem);
+  line-height: 1.45;
+  text-align: left;
+}
+
 @keyframes face-lite-spin {
   to {
     transform: rotate(360deg);

@@ -1,0 +1,46 @@
+.map-knowledge-shell {
+  display: grid;
+  gap: clamp(0.9rem, 2.2vw, 1.2rem);
+}
+
+.map-knowledge-graph {
+  min-height: min(66svh, 700px);
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 14% 12%, rgba(120, 200, 235, 0.18), transparent 58%),
+    radial-gradient(circle at 86% 84%, rgba(54, 132, 197, 0.2), transparent 54%),
+    linear-gradient(145deg, rgba(8, 13, 20, 0.94), rgba(10, 18, 28, 0.9));
+  box-shadow: inset 0 0 0 1px rgba(120, 166, 191, 0.14), 0 24px 46px rgba(3, 8, 14, 0.36);
+  overflow: hidden;
+}
+
+.map-knowledge-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: transparent;
+}
+
+.map-chapter-links {
+  margin-top: 0.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+}
+
+.map-chapter-links button {
+  min-height: 96px;
+}
+
+.map-chapter-links button.is-available {
+  border-color: rgba(126, 196, 229, 0.52);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(126, 196, 229, 0.22), transparent 56%),
+    linear-gradient(145deg, rgba(21, 33, 48, 0.84), rgba(14, 26, 39, 0.88));
+}
+
+.map-chapter-links button.is-disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+}

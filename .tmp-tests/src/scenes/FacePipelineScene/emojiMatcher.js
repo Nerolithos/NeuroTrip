@@ -49,6 +49,25 @@ export const parseEmojiFromChatResponse = (payload) => {
     }
     return extractEmojiFromText(content);
 };
+export const parseEmojiReasonFromChatResponse = (payload) => {
+    if (!payload || typeof payload !== 'object')
+        return null;
+    const directReason = payload.reason;
+    if (typeof directReason === 'string' && directReason.trim()) {
+        return directReason.trim();
+    }
+    const choices = payload.choices;
+    const content = choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || !content.trim())
+        return null;
+    const parsed = parseJsonFromText(content);
+    const parsedReason = parsed?.reason;
+    if (typeof parsedReason === 'string' && parsedReason.trim()) {
+        return parsedReason.trim();
+    }
+    const flattened = content.replace(/[\r\n]+/g, ' ').trim();
+    return flattened.length ? flattened : null;
+};
 export const pickModelCandidates = (primary, fallback) => {
     const output = [];
     const insert = (value) => {
@@ -97,11 +116,13 @@ export const resolveChatapConfig = (input) => {
 export const buildEmojiPrompt = (isZh) => {
     const base = 'You are a strict vision validator for expression-to-emoji matching. ' +
         'Return minified JSON only with keys: emoji(string), confidence(0..1), reason(string). ' +
-        'Pick exactly one most-likely emoji from this set: 😀 😄 😁 🙂 😐 😕 ☹️ 😢 😭 😠 😮 😲 🤔 😴 😎 🤫 👍 🤞 😛.';
+        'Pick exactly one most-likely emoji from this set: 😀 😄 😁 🙂 😐 😕 ☹️ 😢 😭 😠 😮 😲 🤔 😴 😎 🤫 👍 🤞 😛. ' +
+        'The reason must describe observable facial cues such as mouth corner movement, brow/forehead tension, eyebrow direction, mouth openness, and eye focus/openness where visible. ' +
+        'Use a fresh phrasing on every request even if the same emoji is predicted again.';
     if (!isZh) {
         return `${base} Do not output any extra text.`;
     }
-    return `${base} 中文场景优先识别当前表情最像的 emoji，不要输出多余文本。`;
+    return `${base} 中文场景优先识别当前表情最像的 emoji，reason 需要用中文自然描述视觉判断线索，不要输出多余文本。`;
 };
 export const requestEmojiMatch = async (input) => {
     const { config, imageDataUrl, isZh } = input;
@@ -144,8 +165,9 @@ export const requestEmojiMatch = async (input) => {
             }
             const payload = await response.json();
             const emoji = parseEmojiFromChatResponse(payload);
-            if (emoji) {
-                return emoji;
+            const reason = parseEmojiReasonFromChatResponse(payload);
+            if (emoji || reason) {
+                return { emoji, reason };
             }
         }
         catch {

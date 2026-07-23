@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
-import rawVisionGraphHtml from '../../../../knowledge_graph/vision_graph.html?raw'
+import rawMergedGraphHtml from '../../../../knowledge_graph/merged_graph.html?raw'
 
-type VisionKnowledgeGraphProps = {
+type MergedKnowledgeGraphProps = {
   isZh: boolean
 }
 
-const buildVisionGraphSrcDoc = (isZh: boolean) => {
+const buildMergedGraphSrcDoc = (isZh: boolean) => {
   const styleOverride = `
-<style id="vsc-knowledge-override">
+<style id="map-knowledge-override">
   :root {
     --bg:#060b11;
     --panel:#0a1119;
@@ -17,7 +17,7 @@ const buildVisionGraphSrcDoc = (isZh: boolean) => {
     --line:#1f3242;
     --line-strong:#315066;
     --accent:#73c6ea;
-    --node:#5f7384;
+    --cross:#f0b638;
     --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 30px rgba(0,0,0,.4);
   }
   html, body {
@@ -30,9 +30,8 @@ const buildVisionGraphSrcDoc = (isZh: boolean) => {
   header, aside, footer { background: var(--panel); }
   .title h1 { font-size: 15px; letter-spacing: .03em; text-transform: uppercase; }
   .title p { font-size: 11px; }
-  .chip, .btn, .kv span, .edge-card { border-radius: 6px; }
+  .chip, .btn, .edge-card { border-radius: 6px; }
   .region-name { font-size: 15px; }
-  .edge-card .flow { font-size: 12px; }
   .meta { font-size: 11px; }
   .tip { border: 1px solid var(--line-strong); }
 </style>`
@@ -49,37 +48,30 @@ const buildVisionGraphSrcDoc = (isZh: boolean) => {
 
     if (!${isZh ? 'true' : 'false'}) {
       const title = document.querySelector('.title h1');
-      if (title) title.textContent = 'Visual Function Connectome';
+      if (title) title.textContent = 'Five-Domain Connectome';
 
       const subtitle = document.querySelector('.title p');
       if (subtitle) {
-        subtitle.textContent = 'Circle = region · Diamond = cell type · Edge = extracted connection · Color = evidence · Arrow = directed';
-      }
-
-      const panelEmpty = document.querySelector('.panel-empty');
-      if (panelEmpty) {
-        panelEmpty.innerHTML = 'Click any node<br>to inspect evidence and links';
+        subtitle.textContent = 'Merged cross-domain graph · edge color = domain · gold hubs = cross-domain nodes';
       }
     }
   })();
 </script>`
 
-  return `${rawVisionGraphHtml}\n${styleOverride}\n${patchScript}`
+  return `${rawMergedGraphHtml}\n${styleOverride}\n${patchScript}`
 }
 
-export const VisionKnowledgeGraph = ({ isZh }: VisionKnowledgeGraphProps) => {
-  const srcDoc = useMemo(() => buildVisionGraphSrcDoc(isZh), [isZh])
+export const MergedKnowledgeGraph = ({ isZh }: MergedKnowledgeGraphProps) => {
+  const srcDoc = useMemo(() => buildMergedGraphSrcDoc(isZh), [isZh])
 
   return (
-    <div className="vsc-knowledge-wrap">
-      <iframe
-        className="vsc-knowledge-frame"
-        title={isZh ? '视觉知识图谱' : 'Visual knowledge graph'}
-        srcDoc={srcDoc}
-        loading="lazy"
-        sandbox="allow-scripts allow-same-origin"
-        referrerPolicy="no-referrer"
-      />
-    </div>
+    <iframe
+      className="map-knowledge-frame"
+      title={isZh ? '脑网络总图谱' : 'Merged neural knowledge graph'}
+      srcDoc={srcDoc}
+      loading="lazy"
+      sandbox="allow-scripts allow-same-origin"
+      referrerPolicy="no-referrer"
+    />
   )
 }

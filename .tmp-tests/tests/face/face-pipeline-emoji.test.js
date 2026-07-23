@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractEmojiFromText, parseEmojiFromChatResponse, pickModelCandidates, resolveChatapConfig, } from '../../src/scenes/FacePipelineScene/emojiMatcher.js';
+import { extractEmojiFromText, parseEmojiFromChatResponse, parseEmojiReasonFromChatResponse, pickModelCandidates, resolveChatapConfig, } from '../../src/scenes/FacePipelineScene/emojiMatcher.js';
 test('extractEmojiFromText returns first emoji glyph', () => {
     assert.equal(extractEmojiFromText('best match is 😄 for this frame'), '😄');
 });
@@ -15,6 +15,18 @@ test('parseEmojiFromChatResponse parses JSON emoji field first', () => {
         ],
     };
     assert.equal(parseEmojiFromChatResponse(response), '🤔');
+});
+test('parseEmojiReasonFromChatResponse parses reason from JSON content', () => {
+    const response = {
+        choices: [
+            {
+                message: {
+                    content: '{"emoji":"🙂","reason":"Mouth corners lift slightly, brows stay relaxed, and gaze remains steady."}',
+                },
+            },
+        ],
+    };
+    assert.equal(parseEmojiReasonFromChatResponse(response), 'Mouth corners lift slightly, brows stay relaxed, and gaze remains steady.');
 });
 test('pickModelCandidates keeps user model first and appends fallback', () => {
     assert.deepEqual(pickModelCandidates('deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free'), [

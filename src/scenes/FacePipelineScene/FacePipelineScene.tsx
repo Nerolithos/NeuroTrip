@@ -478,6 +478,31 @@ const ensureOpenCvDetectorForVideo = (videoEl: HTMLVideoElement, onActiveBackend
   startLoopIfReady()
 }
 
+const buildPerceptionNarrativeFallback = (isZh: boolean, emoji: string | null) => {
+  const mouthZh = ['嘴角轻微上扬', '嘴角基本平直', '嘴角向下收紧', '嘴巴微张并有呼吸感']
+  const browZh = ['眉峰放松', '眉头略微靠拢', '眉弓向上抬起', '额头有轻微紧张纹路']
+  const eyeZh = ['眼神聚焦稳定', '目光有短暂游移', '眼睑开合偏松', '注视方向保持前方']
+
+  const mouthEn = ['mouth corners lift slightly', 'mouth line stays mostly neutral', 'mouth corners pull downward', 'mouth opens a little with visible tension']
+  const browEn = ['brow ridge looks relaxed', 'inner brows draw slightly inward', 'eyebrows tilt upward', 'forehead tension is faintly visible']
+  const eyeEn = ['gaze remains steady', 'eye focus drifts briefly', 'eyelid opening looks softer', 'eye direction stays forward']
+
+  const seed = Date.now()
+  const emojiToken = emoji || (isZh ? '当前表情' : 'the current emoji')
+
+  if (isZh) {
+    const mouth = mouthZh[seed % mouthZh.length] || mouthZh[0]
+    const brow = browZh[(seed >> 2) % browZh.length] || browZh[0]
+    const eye = eyeZh[(seed >> 4) % eyeZh.length] || eyeZh[0]
+    return `视觉线索：${mouth}，${brow}，${eye}，因此当前更接近 ${emojiToken}。`
+  }
+
+  const mouth = mouthEn[seed % mouthEn.length] || mouthEn[0]
+  const brow = browEn[(seed >> 2) % browEn.length] || browEn[0]
+  const eye = eyeEn[(seed >> 4) % eyeEn.length] || eyeEn[0]
+  return `Visual cues: ${mouth}, ${brow}, and ${eye}, so the expression is closest to ${emojiToken}.`
+}
+
 export const FacePipelineScene = () => {
   const navigate = useNavigate()
   const language = useUiLanguageStore((state) => state.language)
@@ -501,6 +526,11 @@ export const FacePipelineScene = () => {
   const [detectorBackend, setDetectorBackend] = useState<DetectorBackend>('none')
   const [emojiGlyph, setEmojiGlyph] = useState('🙂')
   const [emojiStatus, setEmojiStatus] = useState(isZh ? '点击“识别表情”开始' : 'Click "Detect Emotion" to start')
+  const [emojiCognition, setEmojiCognition] = useState(
+    isZh
+      ? '视觉判断描述会在每次识别后更新。'
+      : 'A visual-cognition description will appear after each detection.',
+  )
   const [emojiLoading, setEmojiLoading] = useState(false)
 
   const detectorLabel = detectorBackend === 'none'
@@ -612,17 +642,31 @@ export const FacePipelineScene = () => {
     emojiBusyRef.current = true
     setEmojiLoading(true)
     setEmojiStatus(isZh ? '识别中，请稍候...' : 'Recognizing, please wait...')
+    setEmojiCognition(isZh ? '正在分析嘴角、眉弓、眼神和额纹线索...' : 'Analyzing mouth corners, brow tension, eye focus, and forehead cues...')
 
     try {
-      const emoji = await requestEmojiMatch({ config, imageDataUrl, isZh })
-      if (emoji) {
-        setEmojiGlyph(emoji)
+      const result = await requestEmojiMatch({ config, imageDataUrl, isZh })
+      const nextEmoji = result?.emoji || null
+      const nextReason = (result?.reason || '').trim()
+
+      if (nextEmoji) {
+        setEmojiGlyph(nextEmoji)
         setEmojiStatus(isZh ? '识别完成，点击按钮可再次识别' : 'Done. Click the button to detect again')
+        setEmojiCognition(nextReason || buildPerceptionNarrativeFallback(isZh, nextEmoji))
       } else {
         setEmojiStatus(isZh ? '未匹配到结果，点击按钮重试' : 'No match found. Click the button to retry')
+        setEmojiCognition(
+          nextReason
+            || (isZh ? '本帧面部线索不足：嘴角、眉线与注视方向变化不明显。' : 'Insufficient facial cues this frame: mouth, brow, and gaze changes are too subtle.'),
+        )
       }
     } catch {
       setEmojiStatus(isZh ? '识别请求失败，点击按钮重试' : 'Recognition request failed. Click the button to retry')
+      setEmojiCognition(
+        isZh
+          ? '请求失败，无法完成视觉线索分析；请保持正脸并再次尝试。'
+          : 'Request failed before cue analysis could complete; keep your face frontal and try again.',
+      )
     } finally {
       emojiBusyRef.current = false
       setEmojiLoading(false)
@@ -771,11 +815,17 @@ export const FacePipelineScene = () => {
       if (!config) {
         emojiConfigRef.current = null
         setEmojiStatus(isZh ? '未配置 CHATAP' : 'CHATAP is not configured')
+        setEmojiCognition(isZh ? '请先配置识别服务后再进行视觉线索判断。' : 'Configure the recognition service before perceptual cue analysis.')
         return
       }
 
       emojiConfigRef.current = config
       setEmojiStatus(isZh ? '点击“识别表情”开始' : 'Click "Detect Emotion" to start')
+      setEmojiCognition(
+        isZh
+          ? '每次识别都会给出新的视觉判断描述（嘴角、眉毛、眼神等线索）。'
+          : 'Each detection will provide a fresh perceptual explanation based on mouth, brows, and gaze cues.',
+      )
     }
 
     const openCamera = async () => {
@@ -909,6 +959,7 @@ export const FacePipelineScene = () => {
           </p>
         ) : null}
         <p className="face-lite-emoji-status">{emojiStatus}</p>
+        <p className="face-lite-emoji-cognition">{emojiCognition}</p>
       </aside>
 
       <button

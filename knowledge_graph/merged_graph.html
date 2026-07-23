@@ -109,7 +109,7 @@
   <div class="hrow">
     <div class="fgroup" id="domFilters"><span class="flabel">功能域</span></div>
     <div class="spacer"></div>
-    <div class="fgroup" id="evFilters"><span class="flabel">证据类型</span></div>
+    <div class="fgroup" id="evFilters"><span class="flabel" title="按文献证据分类筛选边（非线型样式）">文献证据</span></div>
   </div>
 </header>
 
@@ -254,14 +254,28 @@ let drag=null, pan=null;
 function startDrag(e,n,g){e.stopPropagation();drag={n,g};g.classList.add("dragging");
   n.fx=n.x;n.fy=n.y;g.setPointerCapture(e.pointerId);}
 svg.addEventListener("pointerdown",e=>{if(drag)return;      // 空白处按下=平移（节点已 stopPropagation）
-  pan={x:e.clientX,y:e.clientY,vx:vt.x,vy:vt.y};svg.setPointerCapture(e.pointerId);svg.classList.add("panning");});
+  pan={x:e.clientX,y:e.clientY,vx:vt.x,vy:vt.y,moved:false};svg.setPointerCapture(e.pointerId);svg.classList.add("panning");});
 svg.addEventListener("pointermove",e=>{
   if(drag){const pt=toSvg(e.clientX,e.clientY);drag.n.x=drag.n.fx=pt.x;drag.n.y=drag.n.fy=pt.y;render();return;}
   if(pan){const r=svg.getBoundingClientRect();
+    if(Math.abs(e.clientX-pan.x)+Math.abs(e.clientY-pan.y)>5)pan.moved=true;
     vt.x=pan.vx+(e.clientX-pan.x)/r.width*W;vt.y=pan.vy+(e.clientY-pan.y)/r.height*H;applyVT();}});
+
+function restoreOverview(){
+  selected=null;
+  resetView();
+  render();
+  renderHubs();
+}
+
 svg.addEventListener("pointerup",()=>{
   if(drag){drag.g.classList.remove("dragging");drag.n.fx=drag.n.fy=null;drag=null;}
-  if(pan){pan=null;svg.classList.remove("panning");}});
+  if(pan){
+    const shouldRestore=!pan.moved;
+    pan=null;
+    svg.classList.remove("panning");
+    if(shouldRestore)restoreOverview();
+  }});
 
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function domBadges(doms){return doms.map(d=>`<span class="dbadge" style="--c:${dcol(d)}">${dlab(d)}</span>`).join("");}
@@ -326,6 +340,10 @@ document.getElementById("foot").innerHTML=
   `<span class="lg"><span class="sh"></span>脑区</span>`+
   `<span class="lg"><span class="sh dia"></span>功能/细胞</span>`+
   `<span class="lg"><span class="sh cr"></span>跨域(越大跨越域越多)</span>`+
+  `<span class="lg"><span class="mono">→</span>有向边</span>`+
+  `<span class="lg"><span class="mono">—</span>无向边</span>`+
+  `<span class="lg"><span class="mono">- -</span>抑制/下降</span>`+
+  `<span class="lg"><span class="mono" style="color:#c2472f">▲</span>/<span class="mono" style="color:#2f7dc2">▼</span>效应方向</span>`+
   `<span class="spacer" style="flex:1"></span><span>滚轮缩放 · 拖背景平移 · 双击复位 · 数据来源 PubMed 摘要抽取</span>`;
 
 document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")
@@ -343,6 +361,7 @@ function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:1000;
   svg.setAttribute("viewBox",`0 0 ${W} ${H}`);}
 function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
   n.x=W/2+Math.cos(a)*Math.min(W,H)*0.4;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.35;});
+  if(HAS_COORD){setLayout("anatomy");renderHubs();return;}
   simulate(700);fitView(50,50,30);render();renderHubs();}
 addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
 requestAnimationFrame(()=>requestAnimationFrame(init));

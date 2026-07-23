@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { LanguageToggle } from '../../components/LanguageToggle'
 import { GatewayCopy } from '../../components/gateway/GatewayCopy'
 import { NeuralNetworkBackground } from '../../components/gateway/NeuralNetworkBackground'
@@ -27,6 +27,10 @@ type AnchorPoint = {
 type ViewportSize = {
   width: number
   height: number
+}
+
+type GatewayLocationState = {
+  gatewayPreset?: 'chapter-i-cover'
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
@@ -92,6 +96,7 @@ const removeNearWhiteBackground = async (sourceUrl: string) => {
 
 export const GatewayScene = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const resetTrip = useNeuroTripStore((state) => state.resetTrip)
   const recordInteraction = useNeuroTripStore((state) => state.recordInteraction)
   const reducedMotion = useNeuroTripStore((state) => state.reducedMotion)
@@ -327,6 +332,34 @@ export const GatewayScene = () => {
 
     awaitingFrameRef.current = window.requestAnimationFrame(loop)
   }, [applyFrameToStage, transitionDurations, transitionTotalDuration])
+
+  useEffect(() => {
+    const state = location.state as GatewayLocationState | null
+    if (state?.gatewayPreset !== 'chapter-i-cover') {
+      return
+    }
+
+    if (transitionFrameRef.current) {
+      window.cancelAnimationFrame(transitionFrameRef.current)
+      transitionFrameRef.current = null
+    }
+
+    if (awaitingFrameRef.current) {
+      window.cancelAnimationFrame(awaitingFrameRef.current)
+      awaitingFrameRef.current = null
+    }
+
+    transitionStartRef.current = null
+    awaitingStartRef.current = null
+    transitionCheckpointRef.current = { secondaryWave: false, terminalWave: false }
+    setIsTransitioning(false)
+    setCtaEngaged(false)
+    setIsAwaitingContinue(true)
+
+    // Jump to the Chapter I reveal frame, then keep the idle flicker/blink loop.
+    applyTransitionFrame(transitionTotalDuration)
+    startAwaitingLoop()
+  }, [applyTransitionFrame, location.state, startAwaitingLoop, transitionTotalDuration])
 
   const beginTrip = () => {
     if (isTransitioning || isAwaitingContinue) {

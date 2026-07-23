@@ -1,6 +1,6 @@
 ---
 name: chapter-html-integration
-description: 将 knoledge_graph 下的章节 HTML 融合进对应章节场景，并统一为 NeuroTrip 第一章控制台风格。
+description: 将 knowledge_graph 下的章节 HTML 融合进对应章节场景，并统一为 NeuroTrip 第一章控制台风格。
 ---
 
 # Chapter HTML Integration Skill
@@ -9,7 +9,7 @@ description: 将 knoledge_graph 下的章节 HTML 融合进对应章节场景，
 将外部 HTML 知识图谱嵌入章节场景，替换旧模块区域，并满足交互与视觉统一要求。
 
 ## 约束
-1. 章节源文件路径使用 knoledge_graph/<chapter>_graph.html。
+1. 章节源文件路径使用 knowledge_graph/<chapter>_graph.html。
 2. 风格统一到第一章控制台（深色、边框、字体、信息密度）。
 3. 支持图谱交互：
 - 滚轮缩放
@@ -21,7 +21,7 @@ description: 将 knoledge_graph 下的章节 HTML 融合进对应章节场景，
 ## 实施步骤
 1. 新建组件
 - 在 src/scenes/<ChapterScene>/components 下新增 <GraphName>.tsx。
-- 使用 import rawHtml from '../../../../knoledge_graph/<file>.html?raw'。
+- 使用 import rawHtml from '../../../../knowledge_graph/<file>.html?raw'。
 - 用 iframe + srcDoc 嵌入，并注入 style/script 覆写统一主题。
 
 2. HTML 适配
@@ -49,7 +49,7 @@ description: 将 knoledge_graph 下的章节 HTML 融合进对应章节场景，
 
 ## 最小模板
 ```tsx
-import rawHtml from '../../../../knoledge_graph/vision_graph.html?raw'
+import rawHtml from '../../../../knowledge_graph/vision_graph.html?raw'
 
 const srcDoc = `${rawHtml}\n<style>/* theme override */</style>\n<script>/* patch */</script>`
 
