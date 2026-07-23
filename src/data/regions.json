@@ -1,0 +1,50 @@
+[
+  {
+    "id": "visual-cortex",
+    "name": "Visual Cortex",
+    "displayName": "Reality Begins as Electrical Noise",
+    "description": "Primary visual systems transform raw light and motion cues into meaningful patterns.",
+    "scientificNote": "Visual processing is distributed across multiple cortical areas (V1 through higher-order pathways), not a single visual switch.",
+    "functions": ["edge detection", "motion parsing", "color segmentation"],
+    "visualTheme": "crt-noise",
+    "interactionMode": "signal-reconstruction",
+    "disconnectEffect": "low-fidelity-input",
+    "position": { "x": 0.18, "y": 0.44, "z": 0.32 }
+  },
+  {
+    "id": "amygdala",
+    "name": "Amygdala",
+    "displayName": "The Alarm Before the Thought",
+    "description": "Threat salience is amplified rapidly before deliberate interpretation catches up.",
+    "scientificNote": "Amygdala responses depend on network context and prior learning; threat detection is not isolated to one region.",
+    "functions": ["threat salience", "rapid affective tagging", "emotional learning"],
+    "visualTheme": "pulse-jitter",
+    "interactionMode": "threat-reactivity",
+    "disconnectEffect": "calm-with-latency",
+    "position": { "x": 0.43, "y": 0.6, "z": 0.28 }
+  },
+  {
+    "id": "hippocampus",
+    "name": "Hippocampus",
+    "displayName": "Memory Is an Edit, Not a Recording",
+    "description": "Recent fragments are linked with stored context to reconstruct what happened.",
+    "scientificNote": "Memory retrieval is reconstructive and involves hippocampal-cortical interactions across distributed systems.",
+    "functions": ["episodic binding", "context linking", "sequence reconstruction"],
+    "visualTheme": "film-fragments",
+    "interactionMode": "reconstruction",
+    "disconnectEffect": "recent-fragment-loss",
+    "position": { "x": 0.56, "y": 0.63, "z": 0.27 }
+  },
+  {
+    "id": "default-mode-network",
+    "name": "Default Mode Network",
+    "displayName": "When the World Goes Quiet, Narrative Wakes Up",
+    "description": "Self-related thoughts and spontaneous simulation rise when external demand drops.",
+    "scientificNote": "The DMN is a large-scale network pattern, not a single anatomical node.",
+    "functions": ["self-referential processing", "autobiographical simulation", "mind wandering"],
+    "visualTheme": "kaleidoscopic-liquid",
+    "interactionMode": "idle-narration",
+    "disconnectEffect": "reduced-self-drift",
+    "position": { "x": 0.72, "y": 0.41, "z": 0.29 }
+  }
+]

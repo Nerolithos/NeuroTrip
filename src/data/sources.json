@@ -1,0 +1,29 @@
+[
+  {
+    "id": "neurosynth",
+    "name": "Neurosynth",
+    "url": "https://neurosynth.org/",
+    "dataType": "Meta-analytic functional maps",
+    "simplification": "Prototype values normalized into 0-1 activation signatures",
+    "usageScope": "Behavior-to-region intensity shaping",
+    "limitations": "Meta-analytic maps aggregate heterogeneous study contexts"
+  },
+  {
+    "id": "human-connectome-project",
+    "name": "Human Connectome Project",
+    "url": "https://www.humanconnectome.org/",
+    "dataType": "Structural and functional connectivity",
+    "simplification": "Connection weights converted into illustrative network edges",
+    "usageScope": "Graph edge thickness and route suggestions",
+    "limitations": "Illustrative graph is not participant-level reconstruction"
+  },
+  {
+    "id": "openneuro",
+    "name": "OpenNeuro",
+    "url": "https://openneuro.org/",
+    "dataType": "Task fMRI and multimodal open datasets",
+    "simplification": "Task contexts summarized for storytelling language",
+    "usageScope": "Scene scientific notes and caveats",
+    "limitations": "Task protocols differ widely across studies"
+  }
+]

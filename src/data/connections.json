@@ -1,0 +1,47 @@
+[
+  {
+    "source": "visual-cortex",
+    "target": "amygdala",
+    "weight": 0.74,
+    "behavior": "fear",
+    "type": "functional-association",
+    "normalized": true,
+    "illustrative": true
+  },
+  {
+    "source": "visual-cortex",
+    "target": "hippocampus",
+    "weight": 0.62,
+    "behavior": "fear",
+    "type": "functional-association",
+    "normalized": true,
+    "illustrative": true
+  },
+  {
+    "source": "amygdala",
+    "target": "hippocampus",
+    "weight": 0.68,
+    "behavior": "fear",
+    "type": "functional-association",
+    "normalized": true,
+    "illustrative": true
+  },
+  {
+    "source": "hippocampus",
+    "target": "default-mode-network",
+    "weight": 0.56,
+    "behavior": "fear",
+    "type": "statistical-link",
+    "normalized": true,
+    "illustrative": true
+  },
+  {
+    "source": "amygdala",
+    "target": "default-mode-network",
+    "weight": 0.41,
+    "behavior": "fear",
+    "type": "statistical-link",
+    "normalized": true,
+    "illustrative": true
+  }
+]

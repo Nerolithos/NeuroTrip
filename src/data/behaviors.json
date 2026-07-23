@@ -1,0 +1,104 @@
+[
+  {
+    "id": "fear",
+    "name": "Fear",
+    "summary": "Distributed processing of potentially threatening visual stimuli.",
+    "normalized": true,
+    "illustrative": true,
+    "regions": [
+      {
+        "regionId": "visual-cortex",
+        "activation": 0.67,
+        "confidence": 0.73,
+        "note": "Early visual extraction of contour and motion"
+      },
+      {
+        "regionId": "amygdala",
+        "activation": 0.91,
+        "confidence": 0.82,
+        "note": "Rapid salience amplification under uncertainty"
+      },
+      {
+        "regionId": "hippocampus",
+        "activation": 0.63,
+        "confidence": 0.69,
+        "note": "Context linking with prior memory traces"
+      },
+      {
+        "regionId": "default-mode-network",
+        "activation": 0.38,
+        "confidence": 0.6,
+        "note": "Narrative integration increases after immediate threat"
+      }
+    ]
+  },
+  {
+    "id": "memory",
+    "name": "Memory",
+    "summary": "Reconstructive recall through hippocampal-cortical networks.",
+    "normalized": true,
+    "illustrative": true,
+    "regions": [
+      {
+        "regionId": "hippocampus",
+        "activation": 0.9,
+        "confidence": 0.8,
+        "note": "Sequence binding and contextual retrieval"
+      },
+      {
+        "regionId": "default-mode-network",
+        "activation": 0.72,
+        "confidence": 0.68,
+        "note": "Self-related narrative reconstruction"
+      },
+      {
+        "regionId": "visual-cortex",
+        "activation": 0.44,
+        "confidence": 0.55,
+        "note": "Visual imagery recall support"
+      }
+    ]
+  },
+  {
+    "id": "attention",
+    "name": "Attention",
+    "summary": "Selective signal enhancement under task focus.",
+    "normalized": true,
+    "illustrative": true,
+    "regions": [
+      {
+        "regionId": "visual-cortex",
+        "activation": 0.76,
+        "confidence": 0.74,
+        "note": "Feature selection under visual demand"
+      },
+      {
+        "regionId": "amygdala",
+        "activation": 0.48,
+        "confidence": 0.52,
+        "note": "Priority tagging for salient cues"
+      }
+    ]
+  },
+  {
+    "id": "language",
+    "name": "Language",
+    "summary": "Semantic and symbolic construction through distributed networks.",
+    "normalized": true,
+    "illustrative": true,
+    "regions": [
+      {
+        "regionId": "default-mode-network",
+        "activation": 0.51,
+        "confidence": 0.5,
+        "note": "Narrative integration and self-referential framing"
+      },
+      {
+        "regionId": "hippocampus",
+        "activation": 0.49,
+        "confidence": 0.47,
+        "note": "Memory support for lexical retrieval"
+      }
+    ]
+  }
+]
