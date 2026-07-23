@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
 import { requestEmojiMatch, resolveChatapConfig, type ChatapConfig } from './emojiMatcher'
+import { CHAPTER_II_CAMERA_FRAME_KEY } from '../ChapterIIScene/transitionKeys'
 import './facePipeline.css'
 
 type FaceRect = {
@@ -508,14 +509,52 @@ export const FacePipelineScene = () => {
       ? 'OpenCV'
       : (isZh ? '浏览器检测器' : 'Browser detector')
 
+  const captureCurrentCameraFrame = () => {
+    const video = videoRef.current
+    if (!video || video.readyState < 2) return null
+
+    const vw = video.videoWidth || video.clientWidth
+    const vh = video.videoHeight || video.clientHeight
+    if (!vw || !vh) return null
+
+    const captureCanvas = document.createElement('canvas')
+    const targetW = Math.min(960, vw)
+    const scale = targetW / vw
+    const targetH = Math.max(1, Math.round(vh * scale))
+    captureCanvas.width = targetW
+    captureCanvas.height = targetH
+
+    const captureContext = captureCanvas.getContext('2d')
+    if (!captureContext) return null
+
+    try {
+      captureContext.drawImage(video, 0, 0, targetW, targetH)
+      return captureCanvas.toDataURL('image/jpeg', 0.82)
+    } catch {
+      return null
+    }
+  }
+
   const continueToNextScene = () => {
+    const snapshotUrl = captureCurrentCameraFrame()
+
+    try {
+      if (snapshotUrl) {
+        sessionStorage.setItem(CHAPTER_II_CAMERA_FRAME_KEY, snapshotUrl)
+      } else {
+        sessionStorage.removeItem(CHAPTER_II_CAMERA_FRAME_KEY)
+      }
+    } catch {
+      // no-op
+    }
+
     recordInteraction({
       type: 'click',
       scene: '/scene/face-pipeline',
-      target: 'continue-to-amygdala',
+      target: 'continue-to-chapter-ii',
       timestamp: Date.now(),
     })
-    navigate('/scene/amygdala')
+    navigate('/scene/chapter-ii')
   }
 
   const triggerEmojiMatch = async () => {

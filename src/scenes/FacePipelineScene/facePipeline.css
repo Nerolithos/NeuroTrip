@@ -85,10 +85,10 @@
 }
 
 .face-lite-continue {
-  position: absolute;
+  position: fixed;
   right: clamp(0.7rem, 2vw, 1.5rem);
-  bottom: clamp(0.8rem, 2.8vh, 1.4rem);
-  z-index: 14;
+  bottom: max(calc(env(safe-area-inset-bottom, 0px) + 0.9rem), 0.9rem);
+  z-index: 48;
   border: 1px solid rgba(116, 236, 186, 0.72);
   border-radius: 0.7rem;
   background: rgba(10, 46, 33, 0.82);
@@ -98,12 +98,14 @@
   letter-spacing: 0.02em;
   padding: 0.52rem 0.9rem;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .face-lite-continue:hover {
   background: rgba(20, 74, 53, 0.88);
   transform: translateY(-1px);
+  box-shadow: 0 11px 28px rgba(0, 0, 0, 0.52);
 }
 
 .face-lite-emoji {
@@ -201,7 +203,7 @@
   }
 
   .face-lite-continue {
-    bottom: clamp(0.75rem, 2vh, 1rem);
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 0.75rem), 0.75rem);
     padding: 0.48rem 0.84rem;
   }
 }
