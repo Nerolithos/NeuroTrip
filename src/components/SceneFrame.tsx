@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { type PropsWithChildren, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LanguageToggle } from './LanguageToggle'
-import { story } from '../data'
 import { useNeuroTripStore } from '../stores/neuroTripStore'
 import { useUiLanguageStore } from '../stores/uiLanguageStore'
 import type { RegionId } from '../types/neuro'
@@ -31,11 +30,6 @@ export const SceneFrame = ({
   const reducedMotion = useNeuroTripStore((state) => state.reducedMotion)
   const language = useUiLanguageStore((state) => state.language)
   const isZh = language === 'zh'
-
-  const progressIndex = Math.max(
-    0,
-    story.findIndex((chapter) => chapter.route === location.pathname),
-  )
 
   useEffect(() => {
     setCurrentScene(location.pathname)
@@ -99,11 +93,6 @@ export const SceneFrame = ({
           transition={{ duration: reducedMotion ? 0 : 0.42, ease: 'easeOut' }}
         >
           <section className="scene-heading">
-            <span className="scene-progress">
-              {isZh
-                ? `章节 ${progressIndex + 1} / ${story.length}`
-                : `Chapter ${progressIndex + 1} / ${story.length}`}
-            </span>
             <h1>{title}</h1>
             <p>{subtitle}</p>
           </section>

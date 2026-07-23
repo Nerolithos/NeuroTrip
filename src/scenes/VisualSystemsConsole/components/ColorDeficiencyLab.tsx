@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import type { UiLanguage } from '../../../stores/uiLanguageStore'
 import type { ColorDeficiencyType, VisualInputState } from '../../../types/visualSystem'
 import { getColorDeficiencyProfile } from '../../../visual/color/machadoCvd'
-import { deficiencyLabels } from '../../../visual/color/colorDeficiencyTypes'
 
 type ColorDeficiencyLabProps = {
   language: UiLanguage
@@ -10,28 +9,61 @@ type ColorDeficiencyLabProps = {
   onPatch: (patch: Partial<VisualInputState>) => void
 }
 
-const deficiencyList: ColorDeficiencyType[] = [
-  'normal',
-  'protanomaly',
-  'protanopia',
-  'deuteranomaly',
-  'deuteranopia',
-  'tritanomaly',
-  'tritanopia',
+type DeficiencyFamily = 'protan' | 'deuteran' | 'tritan'
+
+const familyOptions = [
+  {
+    id: 'protan' as const,
+    ariaLabelZh: '红色缺陷族',
+    ariaLabelEn: 'Red deficiency family',
+    swatch: '#f05a5a',
+    anomaly: 'protanomaly' as const,
+    opia: 'protanopia' as const,
+  },
+  {
+    id: 'deuteran' as const,
+    ariaLabelZh: '绿色缺陷族',
+    ariaLabelEn: 'Green deficiency family',
+    swatch: '#4fd17a',
+    anomaly: 'deuteranomaly' as const,
+    opia: 'deuteranopia' as const,
+  },
+  {
+    id: 'tritan' as const,
+    ariaLabelZh: '蓝色缺陷族',
+    ariaLabelEn: 'Blue deficiency family',
+    swatch: '#4f97ff',
+    anomaly: 'tritanomaly' as const,
+    opia: 'tritanopia' as const,
+  },
 ]
 
-const deficiencyLabelsZh: Record<ColorDeficiencyType, string> = {
-  normal: '正常三色视觉',
-  protanomaly: '红弱',
-  protanopia: '红盲',
-  deuteranomaly: '绿弱',
-  deuteranopia: '绿盲',
-  tritanomaly: '蓝弱',
-  tritanopia: '蓝盲',
+const familyFromType = (type: ColorDeficiencyType): DeficiencyFamily => {
+  if (type === 'protanomaly' || type === 'protanopia') {
+    return 'protan'
+  }
+  if (type === 'tritanomaly' || type === 'tritanopia') {
+    return 'tritan'
+  }
+  return 'deuteran'
+}
+
+const typeFromFamilyAndSeverity = (
+  family: DeficiencyFamily,
+  severity: number,
+  opiaOnset: number,
+): ColorDeficiencyType => {
+  const familyOption = familyOptions.find((option) => option.id === family)
+  if (!familyOption) {
+    return severity >= opiaOnset ? 'deuteranopia' : 'deuteranomaly'
+  }
+
+  return severity >= opiaOnset ? familyOption.opia : familyOption.anomaly
 }
 
 export const ColorDeficiencyLab = ({ language, visualInput, onPatch }: ColorDeficiencyLabProps) => {
   const isZh = language === 'zh'
+  const activeFamily = familyFromType(visualInput.colorDeficiencyType)
 
   const profile = useMemo(
     () =>
@@ -45,21 +77,9 @@ export const ColorDeficiencyLab = ({ language, visualInput, onPatch }: ColorDefi
   const response = useMemo(() => {
     const severity = profile.effectiveSeverity
 
-    const lWeight =
-      visualInput.colorDeficiencyType === 'protanomaly' ||
-      visualInput.colorDeficiencyType === 'protanopia'
-        ? 0.42
-        : 0.18
-    const mWeight =
-      visualInput.colorDeficiencyType === 'deuteranomaly' ||
-      visualInput.colorDeficiencyType === 'deuteranopia'
-        ? 0.44
-        : 0.24
-    const sWeight =
-      visualInput.colorDeficiencyType === 'tritanomaly' ||
-      visualInput.colorDeficiencyType === 'tritanopia'
-        ? 0.56
-        : 0.31
+    const lWeight = activeFamily === 'protan' ? 0.42 : 0.18
+    const mWeight = activeFamily === 'deuteran' ? 0.44 : 0.24
+    const sWeight = activeFamily === 'tritan' ? 0.56 : 0.31
 
     return {
       l: Math.max(0, 1 - severity * lWeight),
@@ -67,8 +87,8 @@ export const ColorDeficiencyLab = ({ language, visualInput, onPatch }: ColorDefi
       s: Math.max(0, 1 - severity * sWeight),
     }
   }, [
+    activeFamily,
     profile.effectiveSeverity,
-    visualInput.colorDeficiencyType,
   ])
 
   const regimeText =
@@ -84,45 +104,64 @@ export const ColorDeficiencyLab = ({ language, visualInput, onPatch }: ColorDefi
           ? '当前分级: 色盲 (opia/dichromat endpoint)'
           : 'Current regime: opia / dichromatic endpoint'
 
-  const thresholdText = isZh
-    ? `临界分层: anomaly 上限≈${profile.anomalyMaxSeverity.toFixed(2)}，opia 起点≈${profile.opiaOnsetSeverity.toFixed(2)}`
-    : `Threshold split: anomaly ceiling≈${profile.anomalyMaxSeverity.toFixed(2)}, opia onset≈${profile.opiaOnsetSeverity.toFixed(2)}`
-
   const effectiveText = isZh
     ? `生效强度(映射后): ${profile.effectiveSeverity.toFixed(2)}`
     : `Effective severity (mapped): ${profile.effectiveSeverity.toFixed(2)}`
 
   return (
     <div className="vsc-color-lab">
-      <label>
-        <span>{isZh ? '缺陷类型' : 'Deficiency Family'}</span>
-        <select
-          value={visualInput.colorDeficiencyType}
-          onChange={(event) => onPatch({ colorDeficiencyType: event.target.value as ColorDeficiencyType })}
-        >
-          {deficiencyList.map((id) => (
-            <option key={id} value={id}>
-              {isZh ? deficiencyLabelsZh[id] : deficiencyLabels[id]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="vsc-cvd-family-grid" role="group" aria-label={isZh ? '缺陷类型' : 'Deficiency family'}>
+        {familyOptions.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`vsc-cvd-family-btn ${activeFamily === option.id ? 'active' : ''}`}
+            aria-label={isZh ? option.ariaLabelZh : option.ariaLabelEn}
+            onClick={() =>
+              onPatch({
+                colorDeficiencyType: typeFromFamilyAndSeverity(
+                  option.id,
+                  visualInput.colorDeficiencySeverity,
+                  profile.opiaOnsetSeverity,
+                ),
+              })
+            }
+          >
+            <span className="vsc-cvd-family-swatch" style={{ backgroundColor: option.swatch }} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
 
-      <label>
+      <label className="vsc-cvd-severity-block">
         <span>{isZh ? '严重度' : 'Severity'}: {visualInput.colorDeficiencySeverity.toFixed(2)}</span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={visualInput.colorDeficiencySeverity}
-          onChange={(event) => onPatch({ colorDeficiencySeverity: Number(event.target.value) })}
-        />
+        <div className="vsc-cvd-severity-track">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={visualInput.colorDeficiencySeverity}
+            onChange={(event) => {
+              const nextSeverity = Number(event.target.value)
+              onPatch({
+                colorDeficiencySeverity: nextSeverity,
+                colorDeficiencyType: typeFromFamilyAndSeverity(
+                  activeFamily,
+                  nextSeverity,
+                  profile.opiaOnsetSeverity,
+                ),
+              })
+            }}
+          />
+          <div className="vsc-cvd-threshold-marker" style={{ left: `${profile.opiaOnsetSeverity * 100}%` }}>
+            <i aria-hidden="true" />
+            <span>{isZh ? '弱/盲分界' : 'Weak/Blind boundary'}</span>
+          </div>
+        </div>
       </label>
 
       <p className="vsc-cvd-status">{regimeText}</p>
       <p className="vsc-cvd-status">{effectiveText}</p>
-      <p className="vsc-cvd-threshold">{thresholdText}</p>
 
       <div className="vsc-lms-grid" aria-label={isZh ? '归一化 LMS 模型响应' : 'Normalized LMS model response'}>
         <div>
@@ -138,12 +177,6 @@ export const ColorDeficiencyLab = ({ language, visualInput, onPatch }: ColorDefi
           <strong>{response.s.toFixed(2)}</strong>
         </div>
       </div>
-
-      <p className="vsc-model-note">
-        {isZh
-          ? '色弱与色盲采用分层映射：前者限制在 anomaly 区间，后者从 dichromat 阈值起步。'
-          : 'Anomaly and opia are mapped in separated bands: anomaly is capped below the dichromat threshold, while opia starts from it.'}
-      </p>
     </div>
   )
 }

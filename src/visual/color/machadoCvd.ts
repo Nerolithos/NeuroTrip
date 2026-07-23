@@ -1,4 +1,4 @@
-import type { ColorDeficiencyType } from '../../types/visualSystem'
+import type { ColorDeficiencyType } from '../../types/visualSystem.js'
 
 type Matrix3x3 = [
   [number, number, number],
@@ -32,8 +32,9 @@ const TRITAN: Matrix3x3 = [
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1)
 
-const ANOMALY_MAX_SEVERITY = 0.66
-const OPIA_ONSET_SEVERITY = 0.74
+const REGIME_BOUNDARY_SEVERITY = 0.74
+const ANOMALY_MAX_SEVERITY = REGIME_BOUNDARY_SEVERITY
+const OPIA_ONSET_SEVERITY = REGIME_BOUNDARY_SEVERITY
 
 const isAnomalyType = (deficiency: ColorDeficiencyType) =>
   deficiency === 'protanomaly' || deficiency === 'deuteranomaly' || deficiency === 'tritanomaly'
@@ -41,49 +42,16 @@ const isAnomalyType = (deficiency: ColorDeficiencyType) =>
 const isOpiaType = (deficiency: ColorDeficiencyType) =>
   deficiency === 'protanopia' || deficiency === 'deuteranopia' || deficiency === 'tritanopia'
 
-const mixMatrix = (left: Matrix3x3, right: Matrix3x3, t: number): Matrix3x3 => {
-  const k = clamp01(t)
-  return [
-    [
-      left[0][0] + (right[0][0] - left[0][0]) * k,
-      left[0][1] + (right[0][1] - left[0][1]) * k,
-      left[0][2] + (right[0][2] - left[0][2]) * k,
-    ],
-    [
-      left[1][0] + (right[1][0] - left[1][0]) * k,
-      left[1][1] + (right[1][1] - left[1][1]) * k,
-      left[1][2] + (right[1][2] - left[1][2]) * k,
-    ],
-    [
-      left[2][0] + (right[2][0] - left[2][0]) * k,
-      left[2][1] + (right[2][1] - left[2][1]) * k,
-      left[2][2] + (right[2][2] - left[2][2]) * k,
-    ],
-  ]
-}
-
 const pickEndpointMatrix = (deficiency: ColorDeficiencyType): Matrix3x3 => {
-  if (deficiency === 'protanomaly') {
-    return mixMatrix(IDENTITY, PROTAN, 0.62)
-  }
-
-  if (deficiency === 'protanopia') {
+  if (deficiency === 'protanomaly' || deficiency === 'protanopia') {
     return PROTAN
   }
 
-  if (deficiency === 'deuteranomaly') {
-    return mixMatrix(IDENTITY, DEUTERAN, 0.62)
-  }
-
-  if (deficiency === 'deuteranopia') {
+  if (deficiency === 'deuteranomaly' || deficiency === 'deuteranopia') {
     return DEUTERAN
   }
 
-  if (deficiency === 'tritanomaly') {
-    return mixMatrix(IDENTITY, TRITAN, 0.62)
-  }
-
-  if (deficiency === 'tritanopia') {
+  if (deficiency === 'tritanomaly' || deficiency === 'tritanopia') {
     return TRITAN
   }
 
@@ -101,13 +69,27 @@ const multiply = (matrix: Matrix3x3, rgb: [number, number, number]): [number, nu
 
 const mapSeverity = (deficiency: ColorDeficiencyType, severity: number) => {
   const t = clamp01(severity)
+  const boundary = REGIME_BOUNDARY_SEVERITY
 
   if (isAnomalyType(deficiency)) {
-    return Math.pow(t, 1.08) * ANOMALY_MAX_SEVERITY
+    if (boundary <= 0) {
+      return 0
+    }
+    const normalized = clamp01(Math.min(t, boundary) / boundary)
+    return boundary * Math.pow(normalized, 1.08)
   }
 
   if (isOpiaType(deficiency)) {
-    return OPIA_ONSET_SEVERITY + (1 - OPIA_ONSET_SEVERITY) * Math.pow(t, 0.86)
+    if (t <= boundary) {
+      if (boundary <= 0) {
+        return 0
+      }
+      const normalized = clamp01(t / boundary)
+      return boundary * Math.pow(normalized, 1.08)
+    }
+
+    const normalized = clamp01((t - boundary) / (1 - boundary))
+    return boundary + (1 - boundary) * Math.pow(normalized, 0.86)
   }
 
   return 0

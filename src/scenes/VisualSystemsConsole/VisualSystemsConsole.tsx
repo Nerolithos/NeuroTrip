@@ -39,11 +39,11 @@ export const VisualSystemsConsole = () => {
 
   return (
     <SceneFrame
-      title={isZh ? '视觉系统控制台' : 'VISUAL SYSTEMS CONSOLE'}
+      title={isZh ? '视觉操纵面板' : 'VISUAL SYSTEMS CONSOLE'}
       subtitle={isZh ? 'FACADE_DIAGNOSTICS / SESSION 01' : 'FACADE_DIAGNOSTICS / SESSION 01'}
       regionId="visual-cortex"
       previousPath="/"
-      nextPath="/scene/amygdala"
+      nextPath="/scene/face-pipeline"
     >
       <section className="vsc-shell" aria-label="Visual systems diagnostic terminal">
         <div className="vsc-grid">

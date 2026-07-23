@@ -6,6 +6,7 @@ import { BehaviorScene } from './scenes/BehaviorScene/BehaviorScene'
 import { BrainMapScene } from './scenes/BrainMapScene/BrainMapScene'
 import { DefaultModeScene } from './scenes/DefaultModeScene/DefaultModeScene'
 import { ExitScene } from './scenes/ExitScene/ExitScene'
+import { FacePipelineScene } from './scenes/FacePipelineScene/FacePipelineScene'
 import { GatewayScene } from './scenes/GatewayScene/GatewayScene'
 import { HippocampusScene } from './scenes/HippocampusScene/HippocampusScene'
 import { SourcesScene } from './scenes/SourcesScene/SourcesScene'
@@ -22,6 +23,7 @@ const AppRoutes = () => {
       <Route path="/behavior" element={<BehaviorScene />} />
       <Route path="/map" element={<BrainMapScene />} />
       <Route path="/scene/visual-cortex" element={<VisualSystemsConsole />} />
+      <Route path="/scene/face-pipeline" element={<FacePipelineScene />} />
       <Route path="/scene/amygdala" element={<AmygdalaScene />} />
       <Route path="/scene/hippocampus" element={<HippocampusScene />} />
       <Route path="/scene/default-mode-network" element={<DefaultModeScene />} />

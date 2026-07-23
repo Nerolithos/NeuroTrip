@@ -1,0 +1,282 @@
+.face-pipeline-scene {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 18%, rgba(72, 140, 156, 0.12), transparent 48%),
+    linear-gradient(165deg, #03070c 0%, #060c14 52%, #04080e 100%);
+}
+
+.face-pipeline-language {
+  position: absolute;
+  top: clamp(0.86rem, 2.5vh, 1.35rem);
+  right: clamp(0.84rem, 2.2vw, 1.4rem);
+  z-index: 40;
+}
+
+.face-pipeline-video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.face-pipeline-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+.face-pipeline-nosignal {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: #020408;
+}
+
+.face-pipeline-nosignal img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.05) saturate(0.92) brightness(0.9);
+}
+
+.face-pipeline-nosignal p {
+  position: absolute;
+  bottom: clamp(1.3rem, 5vh, 2.7rem);
+  margin: 0;
+  color: rgba(221, 232, 242, 0.92);
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 1.3vw, 0.9rem);
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.face-pipeline-overlay-top {
+  position: absolute;
+  top: clamp(0.95rem, 5vh, 2.8rem);
+  left: clamp(0.9rem, 2.5vw, 2rem);
+  z-index: 14;
+  width: min(64rem, 82vw);
+  display: grid;
+  gap: 0.46rem;
+}
+
+.face-pipeline-overlay-top h1 {
+  margin: 0;
+  color: rgba(240, 248, 251, 0.96);
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  letter-spacing: 0.02em;
+}
+
+.face-pipeline-overlay-top p {
+  margin: 0;
+  color: rgba(194, 216, 228, 0.95);
+  font-family: var(--font-mono);
+  font-size: clamp(0.66rem, 1.1vw, 0.82rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.face-pipeline-chain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.face-pipeline-chain-step {
+  border: 1px solid rgba(114, 158, 176, 0.42);
+  border-radius: 999px;
+  padding: 0.22rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: clamp(0.56rem, 0.95vw, 0.7rem);
+  letter-spacing: 0.08em;
+  color: rgba(186, 205, 216, 0.9);
+  background: rgba(8, 15, 23, 0.66);
+}
+
+.face-pipeline-chain-step.done {
+  border-color: rgba(151, 237, 194, 0.62);
+  color: rgba(188, 247, 216, 0.94);
+}
+
+.face-pipeline-chain-step.active {
+  border-color: rgba(227, 251, 174, 0.92);
+  color: rgba(234, 252, 194, 0.98);
+  background: rgba(67, 100, 56, 0.26);
+}
+
+.face-pipeline-network {
+  position: absolute;
+  right: clamp(0.8rem, 2.1vw, 1.6rem);
+  top: clamp(6.7rem, 19vh, 10rem);
+  z-index: 14;
+  width: min(21rem, 40vw);
+  border: 1px solid rgba(115, 158, 174, 0.36);
+  border-radius: 0.72rem;
+  background: rgba(5, 10, 16, 0.78);
+  padding: 0.56rem 0.62rem;
+  backdrop-filter: blur(2px);
+}
+
+.face-pipeline-network h3 {
+  margin: 0;
+  color: rgba(231, 241, 248, 0.95);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.11em;
+}
+
+.face-pipeline-network ul {
+  margin: 0.54rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.face-pipeline-network li {
+  color: rgba(170, 194, 208, 0.9);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.face-pipeline-network li.active {
+  color: rgba(226, 251, 176, 0.98);
+}
+
+.face-pipeline-config-panel {
+  position: absolute;
+  left: clamp(0.9rem, 2.5vw, 2rem);
+  bottom: clamp(4.4rem, 11vh, 6.5rem);
+  z-index: 14;
+  width: min(42rem, 72vw);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.54rem;
+}
+
+.face-pipeline-config-panel article {
+  border: 1px solid rgba(115, 157, 173, 0.36);
+  border-radius: 0.58rem;
+  background: rgba(5, 11, 17, 0.76);
+  padding: 0.45rem 0.54rem;
+}
+
+.face-pipeline-config-panel h3 {
+  margin: 0;
+  color: rgba(236, 245, 251, 0.96);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
+.face-pipeline-config-panel p {
+  margin: 0.2rem 0 0;
+  color: rgba(183, 206, 218, 0.92);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+}
+
+.face-pipeline-compare {
+  position: absolute;
+  left: clamp(0.9rem, 2.5vw, 2rem);
+  right: clamp(0.9rem, 2.5vw, 2rem);
+  bottom: clamp(4.5rem, 11vh, 7rem);
+  z-index: 14;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.68rem;
+}
+
+.face-pipeline-compare article {
+  border: 1px solid rgba(114, 159, 175, 0.38);
+  border-radius: 0.65rem;
+  background: rgba(4, 10, 16, 0.79);
+  padding: 0.5rem 0.64rem;
+}
+
+.face-pipeline-compare h3 {
+  margin: 0;
+  color: rgba(234, 245, 251, 0.96);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+}
+
+.face-pipeline-compare p {
+  margin: 0.23rem 0 0;
+  color: rgba(188, 212, 225, 0.94);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.face-pipeline-camera-status,
+.face-pipeline-disclaimer,
+.face-pipeline-denied p {
+  position: absolute;
+  left: clamp(0.9rem, 2.5vw, 2rem);
+  margin: 0;
+  z-index: 14;
+  color: rgba(189, 209, 221, 0.9);
+  font-family: var(--font-mono);
+  font-size: clamp(0.58rem, 1vw, 0.74rem);
+  letter-spacing: 0.05em;
+}
+
+.face-pipeline-camera-status {
+  bottom: clamp(4.2rem, 10vh, 6rem);
+}
+
+.face-pipeline-disclaimer,
+.face-pipeline-denied p {
+  bottom: clamp(1rem, 3vh, 1.5rem);
+}
+
+.face-pipeline-continue {
+  position: absolute;
+  right: clamp(0.9rem, 2.5vw, 1.8rem);
+  bottom: clamp(0.86rem, 3vh, 1.5rem);
+  z-index: 30;
+  border: 1px solid rgba(255, 224, 102, 0.55);
+  border-radius: 999px;
+  padding: 0.58rem 1.08rem;
+  background: linear-gradient(120deg, rgba(246, 244, 218, 0.96), rgba(255, 224, 102, 0.96));
+  color: rgba(12, 18, 23, 0.96);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.face-pipeline-denied {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  background: linear-gradient(155deg, rgba(2, 5, 9, 0.92), rgba(8, 12, 17, 0.84));
+}
+
+@media (max-width: 900px) {
+  .face-pipeline-network {
+    width: min(23rem, 86vw);
+    right: auto;
+    left: clamp(0.9rem, 2.5vw, 2rem);
+    top: auto;
+    bottom: clamp(9.2rem, 20vh, 12rem);
+  }
+
+  .face-pipeline-config-panel,
+  .face-pipeline-compare {
+    width: min(24rem, 94vw);
+    grid-template-columns: 1fr;
+    right: auto;
+  }
+}
