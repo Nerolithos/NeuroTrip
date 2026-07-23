@@ -27,8 +27,21 @@ test('parseEmojiFromChatResponse parses JSON emoji field first', () => {
 test('pickModelCandidates keeps user model first and appends fallback', () => {
   assert.deepEqual(
     pickModelCandidates('deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free'),
-    ['deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free'],
+    [
+      'deepseek/deepseek-chat-v3.1:free',
+      'moonshotai/kimi-k2:free',
+      'nvidia/nemotron-nano-12b-v2-vl:free',
+      'google/gemma-4-31b-it:free',
+    ],
   )
+})
+
+test('pickModelCandidates includes resilient defaults when only one model is provided', () => {
+  assert.deepEqual(pickModelCandidates('deepseek/deepseek-chat-v3.1:free', ''), [
+    'deepseek/deepseek-chat-v3.1:free',
+    'nvidia/nemotron-nano-12b-v2-vl:free',
+    'google/gemma-4-31b-it:free',
+  ])
 })
 
 test('resolveChatapConfig falls back to same-origin Cloudflare proxy endpoint', () => {

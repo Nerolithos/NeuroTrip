@@ -17,8 +17,8 @@ export type ChatapConfig = {
   title: string
 }
 
-const DEFAULT_MODEL = 'deepseek/deepseek-chat-v3.1:free'
-const DEFAULT_FALLBACK_MODEL = 'moonshotai/kimi-k2:free'
+const DEFAULT_MODEL = 'nvidia/nemotron-nano-12b-v2-vl:free'
+const DEFAULT_FALLBACK_MODEL = 'google/gemma-4-31b-it:free'
 
 export const extractEmojiFromText = (text: string): string | null => {
   if (!text) return null
@@ -80,14 +80,9 @@ export const pickModelCandidates = (primary?: string, fallback?: string): string
   insert(primary)
   insert(fallback)
 
-  if (!output.length) {
-    output.push(DEFAULT_MODEL, DEFAULT_FALLBACK_MODEL)
-    return output
-  }
-
-  if (output.length === 1 && output[0] !== DEFAULT_FALLBACK_MODEL) {
-    output.push(DEFAULT_FALLBACK_MODEL)
-  }
+  // Always keep resilient built-ins at the end, so env overrides remain first.
+  insert(DEFAULT_MODEL)
+  insert(DEFAULT_FALLBACK_MODEL)
 
   return output
 }
