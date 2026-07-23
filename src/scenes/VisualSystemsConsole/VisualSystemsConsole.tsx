@@ -5,12 +5,11 @@ import { useUiLanguageStore } from '../../stores/uiLanguageStore'
 import { useVisualSystemsStore } from '../../stores/visualSystemsStore'
 import { getAstigmatismTestPatternDataUrl } from '../../visual/optics/astigmatismTestPattern'
 import { ColorDeficiencyLab } from './components/ColorDeficiencyLab'
-import { CorticalAtlas } from './components/CorticalAtlas'
 import { LiveVisualFeed } from './components/LiveVisualFeed'
 import { OpticalPathDiagram } from './components/OpticalPathDiagram'
 import { RefractionLab } from './components/RefractionLab'
 import { TerminalWindow } from './components/TerminalWindow'
-import { VisualFieldRouting } from './components/VisualFieldRouting'
+import { VisionKnowledgeGraph } from './components/VisionKnowledgeGraph'
 import './visualSystemsConsole.css'
 
 export const VisualSystemsConsole = () => {
@@ -137,20 +136,11 @@ export const VisualSystemsConsole = () => {
 
           <TerminalWindow
             id="D-04"
-            title={isZh ? '视野路由映射' : 'VISUAL FIELD ROUTING'}
+            title={isZh ? '视觉功能知识图谱' : 'VISUAL FUNCTION CONNECTOME'}
             status="linked"
-            className="vsc-window-routing"
+            className="vsc-window-knowledge"
           >
-            <VisualFieldRouting language={language} visualInput={visualInput} />
-          </TerminalWindow>
-
-          <TerminalWindow
-            id="E-05"
-            title={isZh ? '皮层图谱与视觉区' : 'CORTICAL ATLAS / VISUAL TERRITORY'}
-            status="linked"
-            className="vsc-window-atlas"
-          >
-            <CorticalAtlas language={language} visualInput={visualInput} onPatch={updateVisualInput} />
+            <VisionKnowledgeGraph isZh={isZh} />
           </TerminalWindow>
         </div>
 

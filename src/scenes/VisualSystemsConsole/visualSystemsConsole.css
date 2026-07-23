@@ -9,7 +9,7 @@
   grid-template-areas:
     'live refraction'
     'live color'
-    'routing atlas';
+    'knowledge knowledge';
   gap: 0.72rem;
 }
 
@@ -182,6 +182,26 @@
 
 .vsc-window-atlas {
   grid-area: atlas;
+}
+
+.vsc-window-knowledge {
+  grid-area: knowledge;
+}
+
+.vsc-window-knowledge .vsc-window-content {
+  padding: 0.5rem;
+}
+
+.vsc-knowledge-wrap {
+  width: 100%;
+}
+
+.vsc-knowledge-frame {
+  width: 100%;
+  min-height: clamp(26rem, 54vh, 38rem);
+  border: 1px solid rgba(112, 162, 178, 0.34);
+  border-radius: 0.62rem;
+  background: rgba(5, 10, 15, 0.95);
 }
 
 .vsc-live-feed-wrap {
@@ -573,8 +593,7 @@
       'live'
       'refraction'
       'color'
-      'routing'
-      'atlas';
+      'knowledge';
   }
 
   .vsc-headerline {
