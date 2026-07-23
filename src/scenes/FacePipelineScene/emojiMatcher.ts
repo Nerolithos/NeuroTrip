@@ -94,15 +94,27 @@ export const pickModelCandidates = (primary?: string, fallback?: string): string
 
 export const resolveChatapConfig = (input: {
   chatap: string
+  fallbackEndpoint?: string
   model?: string
   fallbackModel?: string
   siteUrl: string
   title: string
 }): ChatapConfig | null => {
   const chatap = input.chatap.trim()
-  if (!chatap) return null
-
   const models = pickModelCandidates(input.model, input.fallbackModel)
+
+  if (!chatap) {
+    const endpoint = (input.fallbackEndpoint || '').trim()
+    if (!endpoint) return null
+    return {
+      mode: 'proxy-endpoint',
+      endpoint,
+      models,
+      siteUrl: input.siteUrl,
+      title: input.title,
+    }
+  }
+
   if (chatap.startsWith('http://') || chatap.startsWith('https://')) {
     return {
       mode: 'proxy-endpoint',

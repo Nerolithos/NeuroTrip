@@ -4,6 +4,7 @@ import {
   extractEmojiFromText,
   parseEmojiFromChatResponse,
   pickModelCandidates,
+  resolveChatapConfig,
 } from '../../src/scenes/FacePipelineScene/emojiMatcher.js'
 
 test('extractEmojiFromText returns first emoji glyph', () => {
@@ -28,4 +29,18 @@ test('pickModelCandidates keeps user model first and appends fallback', () => {
     pickModelCandidates('deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free'),
     ['deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free'],
   )
+})
+
+test('resolveChatapConfig uses fallback proxy endpoint when chatap is empty', () => {
+  const config = resolveChatapConfig({
+    chatap: '',
+    fallbackEndpoint: 'https://lithos.pages.dev/api/chatap',
+    model: 'deepseek/deepseek-chat-v3.1:free',
+    fallbackModel: 'moonshotai/kimi-k2:free',
+    siteUrl: 'https://neuro.nero-lithos.com',
+    title: 'FutureGate-Life3',
+  })
+
+  assert.equal(config?.mode, 'proxy-endpoint')
+  assert.equal(config?.endpoint, 'https://lithos.pages.dev/api/chatap')
 })

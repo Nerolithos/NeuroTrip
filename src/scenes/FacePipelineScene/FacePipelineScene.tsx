@@ -622,9 +622,37 @@ export const FacePipelineScene = () => {
     }
 
     const resolveChatapToken = () => {
+      const urlToken = (new URLSearchParams(window.location.search).get('chatap') || '').trim()
+      if (urlToken) {
+        try {
+          window.localStorage.setItem('CHATAP', urlToken)
+        } catch {
+          // no-op
+        }
+        return urlToken
+      }
+
       const env = import.meta.env as Record<string, string | undefined>
       const scopedWindow = window as WindowWithDetectors
-      return (env.VITE_CHATAP || scopedWindow.CHATAP || scopedWindow.__CHATAP__ || '').trim()
+      let stored = ''
+      try {
+        stored = (window.localStorage.getItem('CHATAP') || '').trim()
+      } catch {
+        stored = ''
+      }
+      return (env.VITE_CHATAP || scopedWindow.CHATAP || scopedWindow.__CHATAP__ || stored || '').trim()
+    }
+
+    const resolveFallbackEndpoint = () => {
+      const env = import.meta.env as Record<string, string | undefined>
+      const fromEnv = (env.VITE_CHATAP_PROXY_FALLBACK || '').trim()
+      if (fromEnv) return fromEnv
+
+      const host = window.location.hostname.toLowerCase()
+      if (host === 'neuro.nero-lithos.com' || host.endsWith('.neuro.nero-lithos.com')) {
+        return 'https://lithos.pages.dev/api/chatap'
+      }
+      return `${window.location.origin}/api/chatap`
     }
 
     const startEmojiMatchLoop = () => {
@@ -634,6 +662,7 @@ export const FacePipelineScene = () => {
         chatap,
         model: (env.VITE_CHATAP_MODEL || '').trim(),
         fallbackModel: (env.VITE_CHATAP_MODEL_FALLBACK || '').trim(),
+        fallbackEndpoint: resolveFallbackEndpoint(),
         siteUrl: (env.VITE_CHATAP_SITE_URL || window.location.origin).trim(),
         title: (env.VITE_CHATAP_TITLE || 'FutureGate-Life3').trim(),
       })

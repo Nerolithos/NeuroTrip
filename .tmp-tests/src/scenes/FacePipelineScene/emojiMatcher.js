@@ -70,9 +70,19 @@ export const pickModelCandidates = (primary, fallback) => {
 };
 export const resolveChatapConfig = (input) => {
     const chatap = input.chatap.trim();
-    if (!chatap)
-        return null;
     const models = pickModelCandidates(input.model, input.fallbackModel);
+    if (!chatap) {
+        const endpoint = (input.fallbackEndpoint || '').trim();
+        if (!endpoint)
+            return null;
+        return {
+            mode: 'proxy-endpoint',
+            endpoint,
+            models,
+            siteUrl: input.siteUrl,
+            title: input.title,
+        };
+    }
     if (chatap.startsWith('http://') || chatap.startsWith('https://')) {
         return {
             mode: 'proxy-endpoint',
