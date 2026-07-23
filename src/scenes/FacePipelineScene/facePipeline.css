@@ -5,6 +5,20 @@
   background: #000;
 }
 
+.face-lite-title {
+  position: absolute;
+  left: clamp(0.8rem, 2vw, 1.5rem);
+  top: clamp(0.7rem, 2vh, 1.4rem);
+  z-index: 12;
+  margin: 0;
+  color: rgba(232, 255, 241, 0.98);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.4vw, 1.7rem);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
 .face-lite-video {
   position: absolute;
   inset: 0;
@@ -68,4 +82,49 @@
   color: rgba(255, 220, 220, 0.98);
   font-family: var(--font-mono);
   font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+}
+
+.face-lite-emoji {
+  position: absolute;
+  right: clamp(0.7rem, 2vw, 1.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  width: min(28vw, 13rem);
+  min-width: 8.8rem;
+  padding: 0.8rem 0.7rem;
+  border: 1px solid rgba(111, 225, 181, 0.52);
+  border-radius: 0.85rem;
+  background: rgba(8, 17, 14, 0.58);
+  backdrop-filter: blur(4px);
+  text-align: center;
+}
+
+.face-lite-emoji-label {
+  margin: 0;
+  color: rgba(171, 248, 205, 0.96);
+  font-family: var(--font-mono);
+  font-size: clamp(0.62rem, 1.2vw, 0.82rem);
+}
+
+.face-lite-emoji-glyph {
+  margin: 0.25rem 0 0.2rem;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+}
+
+.face-lite-emoji-status {
+  margin: 0;
+  color: rgba(221, 255, 236, 0.9);
+  font-family: var(--font-mono);
+  font-size: clamp(0.58rem, 1vw, 0.76rem);
+}
+
+@media (max-width: 900px) {
+  .face-lite-emoji {
+    top: auto;
+    bottom: clamp(4.2rem, 9vh, 6rem);
+    transform: none;
+    width: min(62vw, 12rem);
+  }
 }

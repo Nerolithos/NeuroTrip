@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
+import { requestEmojiMatch, resolveChatapConfig } from './emojiMatcher'
 import './facePipeline.css'
 
 type FaceRect = {
@@ -49,6 +50,8 @@ type WindowWithDetectors = Window & {
     detect: (input: HTMLCanvasElement) => Promise<Array<{ boundingBox?: DOMRectReadOnly; x?: number; y?: number; width?: number; height?: number }>>
   }
   dlibHogDetectFaces?: (video: HTMLVideoElement) => FaceRect[]
+  CHATAP?: string
+  __CHATAP__?: string
 }
 
 type DetectorBackend = 'opencv' | 'face-detector' | 'none'
@@ -485,10 +488,16 @@ export const FacePipelineScene = () => {
   const faceDetectionActiveRef = useRef(false)
   const faceDetectionRafIdRef = useRef(0)
   const stopLoopRef = useRef<(() => void) | null>(null)
+  const emojiLoopTimerRef = useRef<number | null>(null)
+  const emojiBusyRef = useRef(false)
+  const emojiCaptureCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const lastFaceDetectedAtRef = useRef(0)
 
   const [cameraStatus, setCameraStatus] = useState(isZh ? '请求摄像头中...' : 'Requesting camera...')
   const [cameraError, setCameraError] = useState('')
   const [detectorBackend, setDetectorBackend] = useState<DetectorBackend>('none')
+  const [emojiGlyph, setEmojiGlyph] = useState('🙂')
+  const [emojiStatus, setEmojiStatus] = useState(isZh ? '等待表情识别' : 'Waiting for emoji match')
 
   useEffect(() => {
     setCurrentScene('/scene/face-pipeline')
@@ -564,6 +573,7 @@ export const FacePipelineScene = () => {
         }
 
         if (faces.length > 0) {
+          lastFaceDetectedAtRef.current = performance.now()
           const f = faces[0]
           if (!f) {
             faceDetectionRafIdRef.current = window.requestAnimationFrame(loop)
@@ -609,6 +619,83 @@ export const FacePipelineScene = () => {
         window.removeEventListener('resize', resizeCanvasToViewport)
         stopFaceDetection()
       }
+    }
+
+    const resolveChatapToken = () => {
+      const env = import.meta.env as Record<string, string | undefined>
+      const scopedWindow = window as WindowWithDetectors
+      return (env.VITE_CHATAP || scopedWindow.CHATAP || scopedWindow.__CHATAP__ || '').trim()
+    }
+
+    const startEmojiMatchLoop = () => {
+      const env = import.meta.env as Record<string, string | undefined>
+      const chatap = resolveChatapToken()
+      const config = resolveChatapConfig({
+        chatap,
+        model: (env.VITE_CHATAP_MODEL || '').trim(),
+        fallbackModel: (env.VITE_CHATAP_MODEL_FALLBACK || '').trim(),
+        siteUrl: (env.VITE_CHATAP_SITE_URL || window.location.origin).trim(),
+        title: (env.VITE_CHATAP_TITLE || 'FutureGate-Life3').trim(),
+      })
+
+      if (!config) {
+        setEmojiStatus(isZh ? '未配置 CHATAP' : 'CHATAP is not configured')
+        return
+      }
+
+      setEmojiStatus(isZh ? '表情匹配中' : 'Matching emoji...')
+
+      const tick = async () => {
+        if (emojiBusyRef.current) return
+        if (performance.now() - lastFaceDetectedAtRef.current > 2400) return
+
+        const video = videoRef.current
+        if (!video || video.readyState < 2) return
+
+        const vw = video.videoWidth || video.clientWidth
+        const vh = video.videoHeight || video.clientHeight
+        if (!vw || !vh) return
+
+        if (!emojiCaptureCanvasRef.current) {
+          emojiCaptureCanvasRef.current = document.createElement('canvas')
+        }
+
+        const captureCanvas = emojiCaptureCanvasRef.current
+        const captureContext = captureCanvas.getContext('2d', { willReadFrequently: true })
+        if (!captureContext) return
+
+        const targetW = Math.min(256, vw)
+        const scale = targetW / vw
+        const targetH = Math.max(1, Math.round(vh * scale))
+        captureCanvas.width = targetW
+        captureCanvas.height = targetH
+
+        try {
+          captureContext.drawImage(video, 0, 0, targetW, targetH)
+        } catch {
+          return
+        }
+
+        const imageDataUrl = captureCanvas.toDataURL('image/jpeg', 0.78)
+        emojiBusyRef.current = true
+
+        try {
+          const emoji = await requestEmojiMatch({ config, imageDataUrl, isZh })
+          if (emoji) {
+            setEmojiGlyph(emoji)
+            setEmojiStatus(isZh ? '已匹配' : 'Matched')
+          } else {
+            setEmojiStatus(isZh ? '匹配失败，继续尝试' : 'No match, retrying')
+          }
+        } finally {
+          emojiBusyRef.current = false
+        }
+      }
+
+      void tick()
+      emojiLoopTimerRef.current = window.setInterval(() => {
+        void tick()
+      }, 2800)
     }
 
     const openCamera = async () => {
@@ -660,11 +747,16 @@ export const FacePipelineScene = () => {
         }, 1200)
 
         startFaceDetectionLoop()
+        startEmojiMatchLoop()
 
         stopLoopRef.current = (() => {
           const previousStop = stopLoopRef.current
           return () => {
             window.clearTimeout(opencvStartupTimeout)
+            if (emojiLoopTimerRef.current !== null) {
+              window.clearInterval(emojiLoopTimerRef.current)
+              emojiLoopTimerRef.current = null
+            }
             if (previousStop) previousStop()
           }
         })()
@@ -681,6 +773,10 @@ export const FacePipelineScene = () => {
       if (stopLoopRef.current) {
         stopLoopRef.current()
         stopLoopRef.current = null
+      }
+      if (emojiLoopTimerRef.current !== null) {
+        window.clearInterval(emojiLoopTimerRef.current)
+        emojiLoopTimerRef.current = null
       }
 
       const stream = streamRef.current
@@ -707,6 +803,8 @@ export const FacePipelineScene = () => {
 
   return (
     <section className="face-lite-scene" aria-label={isZh ? '人脸检测场景' : 'Face detection scene'}>
+      <h1 className="face-lite-title">{isZh ? '识别脸与表情' : 'Face and Emotion Recognition'}</h1>
+
       <video ref={videoRef} className="face-lite-video" playsInline muted />
       <canvas ref={canvasRef} className="face-lite-canvas" />
 
@@ -714,6 +812,12 @@ export const FacePipelineScene = () => {
         <p>{cameraStatus}</p>
         <p>{detectorBackend}</p>
       </div>
+
+      <aside className="face-lite-emoji" aria-live="polite">
+        <p className="face-lite-emoji-label">{isZh ? '当前最像 emoji' : 'Best matching emoji'}</p>
+        <p className="face-lite-emoji-glyph">{emojiGlyph}</p>
+        <p className="face-lite-emoji-status">{emojiStatus}</p>
+      </aside>
 
       {cameraError ? <p className="face-lite-error">{cameraError}</p> : null}
     </section>
