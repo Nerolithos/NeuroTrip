@@ -86,11 +86,16 @@ export const pickModelCandidates = (primary, fallback) => {
 export const resolveChatapConfig = (input) => {
     const chatap = input.chatap.trim();
     const models = pickModelCandidates(input.model, input.fallbackModel);
+    const hasReasonOverride = !!((input.reasonModel || '').trim() || (input.reasonFallbackModel || '').trim());
+    const reasonModels = hasReasonOverride
+        ? pickModelCandidates(input.reasonModel, input.reasonFallbackModel)
+        : [...models];
     if (!chatap) {
         return {
             mode: 'proxy-endpoint',
             endpoint: '/api/openrouter',
             models,
+            reasonModels,
             siteUrl: input.siteUrl,
             title: input.title,
         };
@@ -100,6 +105,7 @@ export const resolveChatapConfig = (input) => {
             mode: 'proxy-endpoint',
             endpoint: chatap,
             models,
+            reasonModels,
             siteUrl: input.siteUrl,
             title: input.title,
         };
@@ -109,20 +115,50 @@ export const resolveChatapConfig = (input) => {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         secret: chatap,
         models,
+        reasonModels,
         siteUrl: input.siteUrl,
         title: input.title,
     };
 };
 export const buildEmojiPrompt = (isZh) => {
-    const base = 'You are a strict vision validator for expression-to-emoji matching. ' +
-        'Return minified JSON only with keys: emoji(string), confidence(0..1), reason(string). ' +
+    const base = 'You are a strict expression-to-emoji classifier. ' +
+        'Return minified JSON only with keys: emoji(string), confidence(0..1). ' +
         'Pick exactly one most-likely emoji from this set: 😀 😄 😁 🙂 😐 😕 ☹️ 😢 😭 😠 😮 😲 🤔 😴 😎 🤫 👍 🤞 😛. ' +
-        'The reason must describe observable facial cues such as mouth corner movement, brow/forehead tension, eyebrow direction, mouth openness, and eye focus/openness where visible. ' +
-        'Use a fresh phrasing on every request even if the same emoji is predicted again.';
+        'Do not output any explanation, reason, or extra keys.';
     if (!isZh) {
-        return `${base} Do not output any extra text.`;
+        return `${base} Output JSON only.`;
     }
-    return `${base} 中文场景优先识别当前表情最像的 emoji，reason 需要用中文自然描述视觉判断线索，不要输出多余文本。`;
+    return `${base} 中文场景请优先返回最接近当前表情的 emoji，只输出 JSON。`;
+};
+export const buildEmojiReasonPrompt = (input) => {
+    const emojiHint = (input.emojiHint || '').trim();
+    if (!input.isZh) {
+        return [
+            'You are a visual-cognition narrator.',
+            'Describe observable facial cues only (mouth corners, brow tension, eyebrow direction, mouth openness, eye focus/opening).',
+            emojiHint ? `The current predicted emoji is ${emojiHint}; keep the description consistent with it.` : 'Infer emotion cues directly from the face image.',
+            'Return minified JSON only with key reason(string).',
+            'The reason must be one concise sentence with fresh phrasing.',
+        ].join(' ');
+    }
+    return [
+        '你是视觉认知描述器。',
+        '只描述可观察到的面部线索：嘴角、眉弓/额纹、眉毛方向、嘴巴开合、眼神/眼睑状态。',
+        emojiHint ? `当前预测 emoji 为 ${emojiHint}，描述应与该表情一致。` : '请根据图像直接判断并描述线索。',
+        '仅返回最小化 JSON，键为 reason(string)。',
+        'reason 保持一句话、自然、每次用不同措辞。',
+    ].join(' ');
+};
+const buildRequestHeaders = (config) => {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (config.mode === 'direct-openrouter') {
+        headers.Authorization = `Bearer ${config.secret || ''}`;
+        headers['HTTP-Referer'] = config.siteUrl;
+        headers['X-Title'] = config.title;
+    }
+    return headers;
 };
 export const requestEmojiMatch = async (input) => {
     const { config, imageDataUrl, isZh } = input;
@@ -138,14 +174,7 @@ export const requestEmojiMatch = async (input) => {
                 ],
             },
         ];
-        const headers = {
-            'Content-Type': 'application/json',
-        };
-        if (config.mode === 'direct-openrouter') {
-            headers.Authorization = `Bearer ${config.secret || ''}`;
-            headers['HTTP-Referer'] = config.siteUrl;
-            headers['X-Title'] = config.title;
-        }
+        const headers = buildRequestHeaders(config);
         const body = JSON.stringify({
             model,
             messages,
@@ -165,9 +194,51 @@ export const requestEmojiMatch = async (input) => {
             }
             const payload = await response.json();
             const emoji = parseEmojiFromChatResponse(payload);
+            if (emoji) {
+                return emoji;
+            }
+        }
+        catch {
+            // try next model candidate
+        }
+    }
+    return null;
+};
+export const requestEmojiReason = async (input) => {
+    const { config, imageDataUrl, isZh, emojiHint } = input;
+    const prompt = buildEmojiReasonPrompt({ isZh, emojiHint });
+    for (let index = 0; index < config.reasonModels.length; index += 1) {
+        const model = config.reasonModels[index];
+        const messages = [
+            {
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: imageDataUrl } },
+                ],
+            },
+        ];
+        const headers = buildRequestHeaders(config);
+        const body = JSON.stringify({
+            model,
+            messages,
+            temperature: 0.35,
+            siteUrl: config.siteUrl,
+            title: config.title,
+        });
+        try {
+            const response = await fetch(config.endpoint, {
+                method: 'POST',
+                headers,
+                body,
+            });
+            if (!response.ok) {
+                continue;
+            }
+            const payload = await response.json();
             const reason = parseEmojiReasonFromChatResponse(payload);
-            if (emoji || reason) {
-                return { emoji, reason };
+            if (reason) {
+                return reason;
             }
         }
         catch {

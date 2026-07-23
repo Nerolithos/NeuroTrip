@@ -54,4 +54,29 @@ test('resolveChatapConfig falls back to same-origin Cloudflare proxy endpoint', 
     assert.ok(config);
     assert.equal(config?.mode, 'proxy-endpoint');
     assert.equal(config?.endpoint, '/api/openrouter');
+    assert.deepEqual(config?.reasonModels, config?.models);
+});
+test('resolveChatapConfig supports independent model candidates for reason generation', () => {
+    const config = resolveChatapConfig({
+        chatap: '',
+        model: 'vision-main-model:free',
+        fallbackModel: 'vision-fallback-model:free',
+        reasonModel: 'reason-main-model:free',
+        reasonFallbackModel: 'reason-fallback-model:free',
+        siteUrl: 'https://neuro.nero-lithos.com',
+        title: 'neurotrip',
+    });
+    assert.ok(config);
+    assert.deepEqual(config?.models, [
+        'vision-main-model:free',
+        'vision-fallback-model:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'google/gemma-4-31b-it:free',
+    ]);
+    assert.deepEqual(config?.reasonModels, [
+        'reason-main-model:free',
+        'reason-fallback-model:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'google/gemma-4-31b-it:free',
+    ]);
 });
