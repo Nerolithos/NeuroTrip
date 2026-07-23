@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { UiLanguage } from '../../../stores/uiLanguageStore'
 import type { VisualInputState } from '../../../types/visualSystem'
 import { computeOpticalApproximation } from '../../../visual/optics/refractionModel'
+import { InfoHint } from './InfoHint'
 
 type RefractionLabProps = {
   language: UiLanguage
@@ -41,6 +42,22 @@ const presets: Array<{ label: string; labelZh: string; patch: Partial<VisualInpu
 export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabProps) => {
   const isZh = language === 'zh'
 
+  const sphereHint: [string, string] = isZh
+    ? ['球镜控制整体前后对焦状态。', '绝对值越大，整体模糊通常越明显。']
+    : ['Sphere controls overall near-far focus mismatch.', 'Larger magnitude generally increases global blur.']
+  const cylinderHint: [string, string] = isZh
+    ? ['柱镜控制两个方向的清晰度差异。', '绝对值越大，方向性模糊越明显。']
+    : ['Cylinder controls directional blur difference.', 'Larger magnitude increases anisotropic blur.']
+  const axisHint: [string, string] = isZh
+    ? ['轴位只决定柱镜作用方向。', '当柱镜为 0 时，轴位变化不会改变图像。']
+    : ['Axis only rotates cylinder direction.', 'When cylinder is 0, changing axis should not change the image.']
+  const distanceHint: [string, string] = isZh
+    ? ['目标距离改变当前对焦需求。', '越近通常越吃力，失焦可能增大。']
+    : ['Object distance changes focusing demand.', 'Nearer targets usually increase mismatch pressure.']
+  const pupilHint: [string, string] = isZh
+    ? ['瞳孔影响模糊感受强度。', '瞳孔更大时，失焦更容易被看见。']
+    : ['Pupil size modulates blur sensitivity.', 'Larger pupils make defocus more visible.']
+
   const opticalApproximation = useMemo(
     () =>
       computeOpticalApproximation({
@@ -63,7 +80,10 @@ export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabP
     <div className="vsc-refraction-lab">
       <div className="vsc-slider-grid">
         <label>
-          <span>{isZh ? '球镜 (D)' : 'Sphere (D)'}: {visualInput.sphereD.toFixed(2)}</span>
+          <span>
+            <InfoHint label={isZh ? '球镜' : 'Sphere'} lines={sphereHint} /> (D):{' '}
+            {visualInput.sphereD.toFixed(2)}
+          </span>
           <input
             type="range"
             min={-10}
@@ -74,7 +94,10 @@ export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabP
           />
         </label>
         <label>
-          <span>{isZh ? '柱镜 (D)' : 'Cylinder (D)'}: {visualInput.cylinderD.toFixed(2)}</span>
+          <span>
+            <InfoHint label={isZh ? '柱镜' : 'Cylinder'} lines={cylinderHint} /> (D):{' '}
+            {visualInput.cylinderD.toFixed(2)}
+          </span>
           <input
             type="range"
             min={-6}
@@ -85,7 +108,10 @@ export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabP
           />
         </label>
         <label>
-          <span>{isZh ? '轴位 (deg)' : 'Axis (deg)'}: {Math.round(visualInput.axisDeg)}</span>
+          <span>
+            <InfoHint label={isZh ? '轴位' : 'Axis'} lines={axisHint} /> (deg):{' '}
+            {Math.round(visualInput.axisDeg)}
+          </span>
           <input
             type="range"
             min={0}
@@ -97,7 +123,8 @@ export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabP
         </label>
         <label>
           <span>
-            {isZh ? '目标距离 (m)' : 'Object Distance (m)'}: {visualInput.objectDistanceM.toFixed(2)}
+            <InfoHint label={isZh ? '目标距离' : 'Object Distance'} lines={distanceHint} /> (m):{' '}
+            {visualInput.objectDistanceM.toFixed(2)}
           </span>
           <input
             type="range"
@@ -109,7 +136,10 @@ export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabP
           />
         </label>
         <label>
-          <span>{isZh ? '瞳孔 (mm)' : 'Pupil (mm)'}: {visualInput.pupilDiameterMm.toFixed(1)}</span>
+          <span>
+            <InfoHint label={isZh ? '瞳孔' : 'Pupil'} lines={pupilHint} /> (mm):{' '}
+            {visualInput.pupilDiameterMm.toFixed(1)}
+          </span>
           <input
             type="range"
             min={2}
@@ -160,37 +190,6 @@ export const RefractionLab = ({ language, visualInput, onPatch }: RefractionLabP
         </p>
       </div>
 
-      <div className="vsc-ray-diagram" aria-hidden="true">
-        <svg viewBox="0 0 360 128" preserveAspectRatio="none">
-          <rect x="0" y="0" width="360" height="128" fill="rgba(5,9,14,0.84)" />
-          <line x1="26" y1="64" x2="334" y2="64" stroke="rgba(120,182,201,0.55)" strokeWidth="1" />
-          <line x1="116" y1="20" x2="116" y2="108" stroke="rgba(255,208,127,0.8)" strokeWidth="2" />
-          <line x1="224" y1="20" x2="224" y2="108" stroke="rgba(145,219,238,0.8)" strokeWidth="2" />
-          <line x1="334" y1="16" x2="334" y2="112" stroke="rgba(236,244,252,0.94)" strokeWidth="2" />
-          <line
-            x1="18"
-            y1="30"
-            x2={224 + visualInput.sphereD * 8}
-            y2={64 - visualInput.cylinderD * 6}
-            stroke="rgba(248,255,163,0.88)"
-            strokeWidth="1.8"
-          />
-          <line
-            x1="18"
-            y1="98"
-            x2={224 + visualInput.sphereD * 8}
-            y2={64 + visualInput.cylinderD * 6}
-            stroke="rgba(248,255,163,0.88)"
-            strokeWidth="1.8"
-          />
-        </svg>
-      </div>
-
-      <p className="vsc-model-note">
-        {isZh
-          ? '当前光线图为示意图，用于说明参数变化趋势，不代表个体眼球光学系统的临床级成像。'
-          : 'Ray paths are schematic and intended for educational trend inspection, not patient-specific ocular image formation.'}
-      </p>
     </div>
   )
 }

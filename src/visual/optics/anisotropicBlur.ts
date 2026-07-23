@@ -26,21 +26,24 @@ export const toImageData = (image: ImageDataLike): ImageData => {
 
 const buildGaussianWeights = (sigmaPx: number) => {
   if (sigmaPx <= 0.001) {
-    return { radius: 0, weights: [1] }
+    return { offsets: [0], weights: [1] }
   }
 
-  const radius = Math.max(1, Math.ceil(sigmaPx * 3))
+  const radius = Math.max(1, Math.ceil(sigmaPx * 2))
+  const step = sigmaPx > 2.8 ? 2 : 1
+  const offsets: number[] = []
   const weights: number[] = []
 
-  for (let offset = -radius; offset <= radius; offset += 1) {
+  for (let offset = -radius; offset <= radius; offset += step) {
     const weight = Math.exp(-0.5 * (offset * offset) / (sigmaPx * sigmaPx))
+    offsets.push(offset)
     weights.push(weight)
   }
 
-  return { radius, weights }
+  return { offsets, weights }
 }
 
-const sampleBilinear = (
+const sampleBilinearRgb = (
   buffer: Float32Array,
   width: number,
   height: number,
@@ -63,8 +66,8 @@ const sampleBilinear = (
   const i01 = (y1 * width + x0) * 4
   const i11 = (y1 * width + x1) * 4
 
-  const output = [0, 0, 0, 0]
-  for (let channel = 0; channel < 4; channel += 1) {
+  const output = [0, 0, 0]
+  for (let channel = 0; channel < 3; channel += 1) {
     const c00 = buffer[i00 + channel] ?? 0
     const c10 = buffer[i10 + channel] ?? 0
     const c01 = buffer[i01 + channel] ?? 0
@@ -75,7 +78,7 @@ const sampleBilinear = (
     output[channel] = top + (bottom - top) * ty
   }
 
-  return output as [number, number, number, number]
+  return output as [number, number, number]
 }
 
 const blurPass = (
@@ -86,7 +89,7 @@ const blurPass = (
   directionY: number,
   sigmaPx: number,
 ) => {
-  const { radius, weights } = buildGaussianWeights(sigmaPx)
+  const { offsets, weights } = buildGaussianWeights(sigmaPx)
   const output = new Float32Array(source.length)
 
   for (let y = 0; y < height; y += 1) {
@@ -94,13 +97,12 @@ const blurPass = (
       let r = 0
       let g = 0
       let b = 0
-      let a = 0
       let sum = 0
 
       for (let index = 0; index < weights.length; index += 1) {
-        const offset = index - radius
+        const offset = offsets[index] ?? 0
         const weight = weights[index] ?? 0
-        const sample = sampleBilinear(
+        const sample = sampleBilinearRgb(
           source,
           width,
           height,
@@ -111,7 +113,6 @@ const blurPass = (
         r += sample[0] * weight
         g += sample[1] * weight
         b += sample[2] * weight
-        a += sample[3] * weight
         sum += weight
       }
 
@@ -120,7 +121,7 @@ const blurPass = (
       output[targetIndex] = r * invSum
       output[targetIndex + 1] = g * invSum
       output[targetIndex + 2] = b * invSum
-      output[targetIndex + 3] = a * invSum
+      output[targetIndex + 3] = 255
     }
   }
 

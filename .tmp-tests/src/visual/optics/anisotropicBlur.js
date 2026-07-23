@@ -1,6 +1,4 @@
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-const KERNEL_RADIUS_SIGMA = 2.25;
-const MIN_ACTIVE_SIGMA = 0.15;
 const createImageDataLike = (width, height, data) => {
     if (typeof ImageData !== 'undefined') {
         const safeData = new Uint8ClampedArray(data.length);
@@ -15,18 +13,21 @@ export const toImageData = (image) => {
     return new ImageData(safeData, image.width, image.height);
 };
 const buildGaussianWeights = (sigmaPx) => {
-    if (sigmaPx <= MIN_ACTIVE_SIGMA) {
-        return { radius: 0, weights: [1] };
+    if (sigmaPx <= 0.001) {
+        return { offsets: [0], weights: [1] };
     }
-    const radius = Math.max(1, Math.ceil(sigmaPx * KERNEL_RADIUS_SIGMA));
+    const radius = Math.max(1, Math.ceil(sigmaPx * 2));
+    const step = sigmaPx > 2.8 ? 2 : 1;
+    const offsets = [];
     const weights = [];
-    for (let offset = -radius; offset <= radius; offset += 1) {
+    for (let offset = -radius; offset <= radius; offset += step) {
         const weight = Math.exp(-0.5 * (offset * offset) / (sigmaPx * sigmaPx));
+        offsets.push(offset);
         weights.push(weight);
     }
-    return { radius, weights };
+    return { offsets, weights };
 };
-const sampleBilinear = (buffer, width, height, sampleX, sampleY) => {
+const sampleBilinearRgb = (buffer, width, height, sampleX, sampleY) => {
     const clampedX = clamp(sampleX, 0, width - 1);
     const clampedY = clamp(sampleY, 0, height - 1);
     const x0 = Math.floor(clampedX);
@@ -39,8 +40,8 @@ const sampleBilinear = (buffer, width, height, sampleX, sampleY) => {
     const i10 = (y0 * width + x1) * 4;
     const i01 = (y1 * width + x0) * 4;
     const i11 = (y1 * width + x1) * 4;
-    const output = [0, 0, 0, 0];
-    for (let channel = 0; channel < 4; channel += 1) {
+    const output = [0, 0, 0];
+    for (let channel = 0; channel < 3; channel += 1) {
         const c00 = buffer[i00 + channel] ?? 0;
         const c10 = buffer[i10 + channel] ?? 0;
         const c01 = buffer[i01 + channel] ?? 0;
@@ -52,26 +53,21 @@ const sampleBilinear = (buffer, width, height, sampleX, sampleY) => {
     return output;
 };
 const blurPass = (source, width, height, directionX, directionY, sigmaPx) => {
-    const { radius, weights } = buildGaussianWeights(sigmaPx);
-    if (radius === 0) {
-        return source.slice();
-    }
+    const { offsets, weights } = buildGaussianWeights(sigmaPx);
     const output = new Float32Array(source.length);
     for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
             let r = 0;
             let g = 0;
             let b = 0;
-            let a = 0;
             let sum = 0;
             for (let index = 0; index < weights.length; index += 1) {
-                const offset = index - radius;
+                const offset = offsets[index] ?? 0;
                 const weight = weights[index] ?? 0;
-                const sample = sampleBilinear(source, width, height, x + directionX * offset, y + directionY * offset);
+                const sample = sampleBilinearRgb(source, width, height, x + directionX * offset, y + directionY * offset);
                 r += sample[0] * weight;
                 g += sample[1] * weight;
                 b += sample[2] * weight;
-                a += sample[3] * weight;
                 sum += weight;
             }
             const targetIndex = (y * width + x) * 4;
@@ -79,7 +75,7 @@ const blurPass = (source, width, height, directionX, directionY, sigmaPx) => {
             output[targetIndex] = r * invSum;
             output[targetIndex + 1] = g * invSum;
             output[targetIndex + 2] = b * invSum;
-            output[targetIndex + 3] = a * invSum;
+            output[targetIndex + 3] = 255;
         }
     }
     return output;

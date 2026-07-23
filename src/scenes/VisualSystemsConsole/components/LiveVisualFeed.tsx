@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { VisualInputState } from '../../../types/visualSystem'
 import type { UiLanguage } from '../../../stores/uiLanguageStore'
 import { decodeRgb8, encodeRgb8 } from '../../../visual/color/srgb'
@@ -23,6 +23,14 @@ export const LiveVisualFeed = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const sourceCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const processedCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const differenceCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const compositionStateRef = useRef({
+    feedMode: visualInput.feedMode,
+    x: visualInput.selectedVisualFieldPoint.x,
+    y: visualInput.selectedVisualFieldPoint.y,
+  })
+  const pointerFrameRef = useRef<number | null>(null)
+  const pendingPointRef = useRef<{ x: number; y: number } | null>(null)
   const [sourceImage, setSourceImage] = useState<HTMLImageElement | null>(null)
 
   useEffect(() => {
@@ -63,110 +71,161 @@ export const LiveVisualFeed = ({
     ],
   )
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || !sourceImage) {
-      return
-    }
+  const composeDisplay = useCallback(
+    (feedMode: VisualInputState['feedMode'], splitPointX: number, splitPointY: number) => {
+      const canvas = canvasRef.current
+      const sourceCanvas = sourceCanvasRef.current
+      const processedCanvas = processedCanvasRef.current
+      const differenceCanvas = differenceCanvasRef.current
+      if (!canvas || !sourceCanvas || !processedCanvas || !differenceCanvas) {
+        return
+      }
 
-    const context = canvas.getContext('2d', { willReadFrequently: true })
-    if (!context) {
-      return
-    }
+      const context = canvas.getContext('2d')
+      if (!context) {
+        return
+      }
 
-    const parent = canvas.parentElement
-    const width = Math.max(360, parent?.clientWidth ?? 680)
-    const height = Math.round(width * 0.56)
-    const pixelRatio = window.devicePixelRatio || 1
+      const width = sourceCanvas.width
+      const height = sourceCanvas.height
+      const pixelRatio = window.devicePixelRatio || 1
 
-    canvas.width = width * pixelRatio
-    canvas.height = height * pixelRatio
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
-    context.setTransform(1, 0, 0, 1, 0, 0)
-    context.globalAlpha = 1
-    context.globalCompositeOperation = 'source-over'
-    context.filter = 'none'
-    context.clearRect(0, 0, canvas.width, canvas.height)
-    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+      context.setTransform(1, 0, 0, 1, 0, 0)
+      context.globalAlpha = 1
+      context.globalCompositeOperation = 'source-over'
+      context.filter = 'none'
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
-    if (!sourceCanvasRef.current) {
-      sourceCanvasRef.current = document.createElement('canvas')
-    }
-    if (!processedCanvasRef.current) {
-      processedCanvasRef.current = document.createElement('canvas')
-    }
+      if (feedMode === 'processed') {
+        context.drawImage(processedCanvas, 0, 0)
+      } else if (feedMode === 'difference') {
+        context.drawImage(differenceCanvas, 0, 0)
+      } else {
+        const splitX = width * splitPointX
+        context.drawImage(sourceCanvas, 0, 0)
+        context.save()
+        context.beginPath()
+        context.rect(splitX, 0, width - splitX, height)
+        context.clip()
+        context.drawImage(processedCanvas, 0, 0)
+        context.restore()
 
-    const sourceCanvas = sourceCanvasRef.current
-    const processedCanvas = processedCanvasRef.current
-    sourceCanvas.width = width
-    sourceCanvas.height = height
-    processedCanvas.width = width
-    processedCanvas.height = height
-
-    const sourceCtx = sourceCanvas.getContext('2d')
-    const processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true })
-    if (!sourceCtx || !processedCtx) {
-      return
-    }
-
-    sourceCtx.clearRect(0, 0, width, height)
-    sourceCtx.drawImage(sourceImage, 0, 0, width, height)
-
-    const optics = runOpticalTransform(processedCtx, sourceCanvas, width, height, opticalParams)
-
-    const processedFrame = processedCtx.getImageData(0, 0, width, height)
-    const processedPixels = processedFrame.data
-
-    for (let index = 0; index < processedPixels.length; index += 4) {
-      const r = processedPixels[index] ?? 0
-      const g = processedPixels[index + 1] ?? 0
-      const b = processedPixels[index + 2] ?? 0
-
-      const linear = decodeRgb8(r, g, b)
-      const transformed = applyMachadoApproximation(
-        linear,
-        visualInput.colorDeficiencyType,
-        visualInput.colorDeficiencySeverity,
-      )
-      const encoded = encodeRgb8(transformed[0], transformed[1], transformed[2])
-
-      processedPixels[index] = Math.round(encoded[0])
-      processedPixels[index + 1] = Math.round(encoded[1])
-      processedPixels[index + 2] = Math.round(encoded[2])
-    }
-
-    processedCtx.putImageData(processedFrame, 0, 0)
-
-    context.clearRect(0, 0, width, height)
-
-    if (visualInput.feedMode === 'processed') {
-      context.drawImage(processedCanvas, 0, 0)
-    } else if (visualInput.feedMode === 'split') {
-      const splitX = width * visualInput.selectedVisualFieldPoint.x
-
-      context.drawImage(sourceCanvas, 0, 0)
-      context.save()
-      context.beginPath()
-      context.rect(splitX, 0, width - splitX, height)
-      context.clip()
-      context.drawImage(processedCanvas, 0, 0)
-      context.restore()
+        context.save()
+        context.strokeStyle = 'rgba(238, 247, 255, 0.9)'
+        context.lineWidth = 1
+        context.setLineDash([5, 5])
+        context.beginPath()
+        context.moveTo(splitX, 0)
+        context.lineTo(splitX, height)
+        context.stroke()
+        context.restore()
+      }
 
       context.save()
-      context.strokeStyle = 'rgba(238, 247, 255, 0.9)'
+      context.globalCompositeOperation = 'source-over'
+      context.strokeStyle = 'rgba(244, 249, 255, 0.82)'
       context.lineWidth = 1
-      context.setLineDash([5, 5])
       context.beginPath()
-      context.moveTo(splitX, 0)
-      context.lineTo(splitX, height)
+      context.moveTo(width * splitPointX, 0)
+      context.lineTo(width * splitPointX, height)
+      context.stroke()
+      context.beginPath()
+      context.moveTo(0, height * splitPointY)
+      context.lineTo(width, height * splitPointY)
       context.stroke()
       context.restore()
-    } else {
-      const rawFrame = sourceCtx.getImageData(0, 0, width, height)
-      const differenceFrame = context.createImageData(width, height)
-      const differencePixels = differenceFrame.data
+    },
+    [],
+  )
 
+  useEffect(() => {
+    if (!sourceImage) {
+      return
+    }
+
+    let cancelled = false
+    const frame = window.requestAnimationFrame(() => {
+      if (cancelled) {
+        return
+      }
+
+      const displayCanvas = canvasRef.current
+      if (!displayCanvas) {
+        return
+      }
+
+      if (!sourceCanvasRef.current) {
+        sourceCanvasRef.current = document.createElement('canvas')
+      }
+      if (!processedCanvasRef.current) {
+        processedCanvasRef.current = document.createElement('canvas')
+      }
+      if (!differenceCanvasRef.current) {
+        differenceCanvasRef.current = document.createElement('canvas')
+      }
+
+      const parent = displayCanvas.parentElement
+      const width = Math.max(360, parent?.clientWidth ?? 680)
+      const height = Math.round(width * 0.56)
+      const pixelRatio = window.devicePixelRatio || 1
+
+      displayCanvas.width = width * pixelRatio
+      displayCanvas.height = height * pixelRatio
+      displayCanvas.style.width = `${width}px`
+      displayCanvas.style.height = `${height}px`
+
+      const sourceCanvas = sourceCanvasRef.current
+      const processedCanvas = processedCanvasRef.current
+      const differenceCanvas = differenceCanvasRef.current
+      sourceCanvas.width = width
+      sourceCanvas.height = height
+      processedCanvas.width = width
+      processedCanvas.height = height
+      differenceCanvas.width = width
+      differenceCanvas.height = height
+
+      const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true })
+      const processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true })
+      const differenceCtx = differenceCanvas.getContext('2d')
+      if (!sourceCtx || !processedCtx || !differenceCtx) {
+        return
+      }
+
+      sourceCtx.setTransform(1, 0, 0, 1, 0, 0)
+      sourceCtx.globalAlpha = 1
+      sourceCtx.globalCompositeOperation = 'source-over'
+      sourceCtx.filter = 'none'
+      sourceCtx.clearRect(0, 0, width, height)
+      sourceCtx.drawImage(sourceImage, 0, 0, width, height)
+
+      const optics = runOpticalTransform(processedCtx, sourceCanvas, width, height, opticalParams)
+      const processedFrame = processedCtx.getImageData(0, 0, width, height)
+      const processedPixels = processedFrame.data
+
+      for (let index = 0; index < processedPixels.length; index += 4) {
+        const r = processedPixels[index] ?? 0
+        const g = processedPixels[index + 1] ?? 0
+        const b = processedPixels[index + 2] ?? 0
+
+        const linear = decodeRgb8(r, g, b)
+        const transformed = applyMachadoApproximation(
+          linear,
+          visualInput.colorDeficiencyType,
+          visualInput.colorDeficiencySeverity,
+        )
+        const encoded = encodeRgb8(transformed[0], transformed[1], transformed[2])
+
+        processedPixels[index] = Math.round(encoded[0])
+        processedPixels[index + 1] = Math.round(encoded[1])
+        processedPixels[index + 2] = Math.round(encoded[2])
+        processedPixels[index + 3] = 255
+      }
+      processedCtx.putImageData(processedFrame, 0, 0)
+
+      const rawFrame = sourceCtx.getImageData(0, 0, width, height)
+      const differenceFrame = sourceCtx.createImageData(width, height)
+      const differencePixels = differenceFrame.data
       const gain = 2.6 + optics.defocusStrength * 2 + visualInput.colorDeficiencySeverity * 1.8
 
       for (let index = 0; index < differencePixels.length; index += 4) {
@@ -180,31 +239,51 @@ export const LiveVisualFeed = ({
         differencePixels[index + 3] = 255
       }
 
-      context.putImageData(differenceFrame, 0, 0)
-    }
+      differenceCtx.putImageData(differenceFrame, 0, 0)
 
-    context.save()
-    context.globalCompositeOperation = 'source-over'
-    context.strokeStyle = 'rgba(244, 249, 255, 0.82)'
-    context.lineWidth = 1
-    context.beginPath()
-    context.moveTo(width * visualInput.selectedVisualFieldPoint.x, 0)
-    context.lineTo(width * visualInput.selectedVisualFieldPoint.x, height)
-    context.stroke()
-    context.beginPath()
-    context.moveTo(0, height * visualInput.selectedVisualFieldPoint.y)
-    context.lineTo(width, height * visualInput.selectedVisualFieldPoint.y)
-    context.stroke()
-    context.restore()
+      const compositionState = compositionStateRef.current
+      composeDisplay(compositionState.feedMode, compositionState.x, compositionState.y)
+    })
+
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(frame)
+    }
   }, [
+    composeDisplay,
     opticalParams,
     sourceImage,
     visualInput.colorDeficiencySeverity,
     visualInput.colorDeficiencyType,
+  ])
+
+  useEffect(() => {
+    compositionStateRef.current = {
+      feedMode: visualInput.feedMode,
+      x: visualInput.selectedVisualFieldPoint.x,
+      y: visualInput.selectedVisualFieldPoint.y,
+    }
+
+    composeDisplay(
+      visualInput.feedMode,
+      visualInput.selectedVisualFieldPoint.x,
+      visualInput.selectedVisualFieldPoint.y,
+    )
+  }, [
+    composeDisplay,
     visualInput.feedMode,
     visualInput.selectedVisualFieldPoint.x,
     visualInput.selectedVisualFieldPoint.y,
   ])
+
+  useEffect(() => {
+    return () => {
+      if (pointerFrameRef.current !== null) {
+        window.cancelAnimationFrame(pointerFrameRef.current)
+        pointerFrameRef.current = null
+      }
+    }
+  }, [])
 
   const modeLabel =
     visualInput.feedMode === 'difference'
@@ -246,7 +325,19 @@ export const LiveVisualFeed = ({
             const box = event.currentTarget.getBoundingClientRect()
             const x = (event.clientX - box.left) / box.width
             const y = (event.clientY - box.top) / box.height
-            onProbeMove(x, y)
+            pendingPointRef.current = { x, y }
+            if (pointerFrameRef.current !== null) {
+              return
+            }
+
+            pointerFrameRef.current = window.requestAnimationFrame(() => {
+              pointerFrameRef.current = null
+              const point = pendingPointRef.current
+              if (!point) {
+                return
+              }
+              onProbeMove(point.x, point.y)
+            })
           }}
           onClick={(event) => {
             const box = event.currentTarget.getBoundingClientRect()
@@ -256,11 +347,6 @@ export const LiveVisualFeed = ({
           }}
         />
       </div>
-      <p className="vsc-live-feed-note">
-        {language === 'zh'
-          ? '光学模型为教育性近似，不可用于处方、诊断或任何临床用途。'
-          : 'OPTICAL MODEL: APPROXIMATE. EDUCATIONAL SIMULATION, NOT A PRESCRIPTION OR CLINICAL DIAGNOSTIC.'}
-      </p>
     </div>
   )
 }

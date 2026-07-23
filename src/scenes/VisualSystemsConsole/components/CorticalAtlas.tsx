@@ -45,11 +45,6 @@ export const CorticalAtlas = ({ language, visualInput, onPatch }: CorticalAtlasP
           })}
         </svg>
       </div>
-      <p className="vsc-model-note">
-        {isZh
-          ? '几何图为示意表达，区域名称依据公开发表的皮层分区研究。'
-          : 'SCHEMATIC GEOMETRY. REGION LABELS BASED ON PUBLISHED ATLASES.'}
-      </p>
     </div>
   )
 }
