@@ -19,15 +19,15 @@ test('parseEmojiFromChatResponse parses JSON emoji field first', () => {
 test('pickModelCandidates keeps user model first and appends fallback', () => {
     assert.deepEqual(pickModelCandidates('deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free'), ['deepseek/deepseek-chat-v3.1:free', 'moonshotai/kimi-k2:free']);
 });
-test('resolveChatapConfig uses fallback proxy endpoint when chatap is empty', () => {
+test('resolveChatapConfig falls back to same-origin Cloudflare proxy endpoint', () => {
     const config = resolveChatapConfig({
         chatap: '',
-        fallbackEndpoint: 'https://lithos.pages.dev/api/chatap',
         model: 'deepseek/deepseek-chat-v3.1:free',
         fallbackModel: 'moonshotai/kimi-k2:free',
         siteUrl: 'https://neuro.nero-lithos.com',
-        title: 'FutureGate-Life3',
+        title: 'neurotrip',
     });
+    assert.ok(config);
     assert.equal(config?.mode, 'proxy-endpoint');
-    assert.equal(config?.endpoint, 'https://lithos.pages.dev/api/chatap');
+    assert.equal(config?.endpoint, '/api/openrouter');
 });

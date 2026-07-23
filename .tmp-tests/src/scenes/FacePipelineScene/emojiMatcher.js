@@ -72,12 +72,9 @@ export const resolveChatapConfig = (input) => {
     const chatap = input.chatap.trim();
     const models = pickModelCandidates(input.model, input.fallbackModel);
     if (!chatap) {
-        const endpoint = (input.fallbackEndpoint || '').trim();
-        if (!endpoint)
-            return null;
         return {
             mode: 'proxy-endpoint',
-            endpoint,
+            endpoint: '/api/openrouter',
             models,
             siteUrl: input.siteUrl,
             title: input.title,
