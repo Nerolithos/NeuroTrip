@@ -84,6 +84,28 @@
   font-size: clamp(0.7rem, 1.2vw, 0.9rem);
 }
 
+.face-lite-continue {
+  position: absolute;
+  right: clamp(0.7rem, 2vw, 1.5rem);
+  bottom: clamp(0.8rem, 2.8vh, 1.4rem);
+  z-index: 14;
+  border: 1px solid rgba(116, 236, 186, 0.72);
+  border-radius: 0.7rem;
+  background: rgba(10, 46, 33, 0.82);
+  color: rgba(228, 255, 240, 0.98);
+  font-family: var(--font-mono);
+  font-size: clamp(0.66rem, 1.15vw, 0.84rem);
+  letter-spacing: 0.02em;
+  padding: 0.52rem 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.face-lite-continue:hover {
+  background: rgba(20, 74, 53, 0.88);
+  transform: translateY(-1px);
+}
+
 .face-lite-emoji {
   position: absolute;
   right: clamp(0.7rem, 2vw, 1.5rem);
@@ -176,5 +198,10 @@
     bottom: clamp(4.2rem, 9vh, 6rem);
     transform: none;
     width: min(62vw, 12rem);
+  }
+
+  .face-lite-continue {
+    bottom: clamp(0.75rem, 2vh, 1rem);
+    padding: 0.48rem 0.84rem;
   }
 }

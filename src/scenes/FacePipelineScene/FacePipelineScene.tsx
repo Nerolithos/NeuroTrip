@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
 import { requestEmojiMatch, resolveChatapConfig, type ChatapConfig } from './emojiMatcher'
@@ -477,6 +478,7 @@ const ensureOpenCvDetectorForVideo = (videoEl: HTMLVideoElement, onActiveBackend
 }
 
 export const FacePipelineScene = () => {
+  const navigate = useNavigate()
   const language = useUiLanguageStore((state) => state.language)
   const isZh = language === 'zh'
   const setCurrentScene = useNeuroTripStore((state) => state.setCurrentScene)
@@ -505,6 +507,16 @@ export const FacePipelineScene = () => {
     : detectorBackend === 'opencv'
       ? 'OpenCV'
       : (isZh ? '浏览器检测器' : 'Browser detector')
+
+  const continueToNextScene = () => {
+    recordInteraction({
+      type: 'click',
+      scene: '/scene/face-pipeline',
+      target: 'continue-to-amygdala',
+      timestamp: Date.now(),
+    })
+    navigate('/scene/amygdala')
+  }
 
   const triggerEmojiMatch = async () => {
     if (emojiBusyRef.current) return
@@ -859,6 +871,15 @@ export const FacePipelineScene = () => {
         ) : null}
         <p className="face-lite-emoji-status">{emojiStatus}</p>
       </aside>
+
+      <button
+        type="button"
+        className="face-lite-continue"
+        onClick={continueToNextScene}
+        aria-label={isZh ? '继续到下一章节' : 'Continue to next chapter'}
+      >
+        {isZh ? '继续' : 'Continue'}
+      </button>
 
       {cameraError ? <p className="face-lite-error">{cameraError}</p> : null}
     </section>
