@@ -1,0 +1,262 @@
+<title>睡眠功能脑连接图谱</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fafbfc;
+    --ink:#1a2230; --muted:#69727f; --line:#e4e8ee; --line-strong:#cfd6df;
+    --accent:#4f7fe0; --node:#8a93a3;
+    --shadow:0 1px 2px rgba(20,30,50,.06),0 8px 24px rgba(20,30,50,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0e1219; --panel:#151b25; --panel-2:#111722;
+      --ink:#e7ecf4; --muted:#939dac; --line:#242e3d; --line-strong:#33405360;
+      --accent:#6d97ee; --node:#5c6675;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);}
+  }
+  :root[data-theme="light"]{ --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fafbfc;
+    --ink:#1a2230; --muted:#69727f; --line:#e4e8ee; --line-strong:#cfd6df; --accent:#4f7fe0; --node:#8a93a3;}
+  :root[data-theme="dark"]{ --bg:#0e1219; --panel:#151b25; --panel-2:#111722;
+    --ink:#e7ecf4; --muted:#939dac; --line:#242e3d; --line-strong:#33405360; --accent:#6d97ee; --node:#5c6675;}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  header{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;
+    align-items:center;gap:14px 22px;background:var(--panel);}
+  .title h1{margin:0;font-size:17px;font-weight:650;letter-spacing:-.01em}
+  .title p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+  .spacer{flex:1 1 auto}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+    padding:5px 11px 5px 9px;border:1px solid var(--line-strong);border-radius:999px;
+    background:var(--panel-2);font-size:12.5px;font-weight:550;color:var(--ink);
+    transition:opacity .15s,border-color .15s;}
+  .chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .chip[aria-pressed="false"]{opacity:.38}
+  .chip:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn{cursor:pointer;border:1px solid var(--line-strong);background:var(--panel-2);color:var(--ink);
+    font:inherit;font-size:12.5px;font-weight:550;padding:6px 12px;border-radius:8px;}
+  .btn:hover{border-color:var(--accent)}
+  main{flex:1 1 auto;display:flex;min-height:0}
+  .canvas-wrap{position:relative;flex:1 1 auto;min-width:0}
+  svg{width:100%;height:100%;display:block;touch-action:none}
+  .edge{fill:none;stroke-width:1.7;opacity:.7;transition:opacity .15s,stroke-width .15s}
+  .edge.dim{opacity:.05}
+  .edge.hot{opacity:1;stroke-width:3.2}
+  .node .shp{stroke:var(--panel);stroke-width:2;cursor:grab;fill:var(--node)}
+  .node.dragging .shp{cursor:grabbing}
+  .node text{font-size:10.5px;font-weight:600;fill:var(--ink);pointer-events:none;paint-order:stroke;
+    stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+  .node.dim{opacity:.12}
+  .node.sel .shp{stroke:var(--accent);stroke-width:3.5}
+  aside{width:360px;flex:0 0 360px;border-left:1px solid var(--line);background:var(--panel);
+    overflow-y:auto;padding:20px;}
+  @media (max-width:840px){main{flex-direction:column}
+    aside{width:auto;flex:0 0 auto;max-height:46%;border-left:none;border-top:1px solid var(--line)}}
+  .panel-empty{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+  .region-name{font-size:18px;font-weight:650;margin:0;letter-spacing:-.01em;text-wrap:balance}
+  .region-sub{color:var(--muted);font-size:12.5px;margin:3px 0 14px}
+  .kv{display:flex;gap:8px;font-size:12px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap}
+  .kv span{background:var(--panel-2);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+  .grp-h{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    font-weight:650;margin:18px 0 8px}
+  .edge-card{border:1px solid var(--line);border-left:3px solid var(--c,var(--line));
+    border-radius:9px;padding:10px 12px;margin-bottom:9px;background:var(--panel-2)}
+  .edge-card .flow{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .edge-card .arr{color:var(--muted)}
+  .rel{font-size:11px;color:var(--muted)}
+  .badge{display:inline-block;font-size:10.5px;font-weight:650;padding:2px 7px;border-radius:5px;color:#fff;background:var(--c,var(--muted))}
+  .meta{margin-top:6px;font-size:11.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .dir{font-weight:650;padding:1px 6px;border-radius:5px;border:1px solid currentColor}
+  .dir.up{color:#c2472f} .dir.down{color:#2f7dc2}
+  :root[data-theme="dark"] .dir.up{color:#f0836b} :root[data-theme="dark"] .dir.down{color:#77b0ef}
+  .quote{margin:7px 0 0;font-size:12px;color:var(--muted);font-style:italic;
+    border-left:2px solid var(--line-strong);padding-left:9px;line-height:1.45}
+  a.pmid{color:var(--accent);text-decoration:none} a.pmid:hover{text-decoration:underline}
+  footer{padding:9px 22px;border-top:1px solid var(--line);background:var(--panel);font-size:11.5px;
+    color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .lg{display:inline-flex;align-items:center;gap:5px}
+  .lg .ln{width:18px;height:0;border-top:2.4px solid var(--muted)} .lg .ln.dash{border-top-style:dashed}
+  .lg .sh{width:11px;height:11px;background:var(--muted)} .lg .sh.dia{transform:rotate(45deg);width:9px;height:9px}
+  .tip{position:fixed;pointer-events:none;z-index:20;background:var(--ink);color:var(--bg);padding:7px 10px;
+    border-radius:7px;font-size:11.5px;max-width:280px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s;line-height:1.4}
+  .tip .tq{opacity:.8;font-style:italic;margin-top:3px}
+</style>
+
+<header>
+  <div class="title">
+    <h1>睡眠功能脑连接图谱</h1>
+    <p>圆=脑区　菱形=功能/细胞　边=抽取到的连接　颜色=证据类型　箭头=有向　虚线=减弱　· 真实抽取数据</p>
+  </div>
+  <div class="spacer"></div>
+  <div class="filters" id="filters" role="group" aria-label="证据类型过滤"></div>
+  <button class="btn" id="themeBtn" type="button" title="切换明暗">◐</button>
+</header>
+
+<main>
+  <div class="canvas-wrap"><svg id="svg" aria-label="脑连接图谱"></svg></div>
+  <aside id="aside"><div class="panel-empty">点击任意节点<br>查看它的连接与证据</div></aside>
+</main>
+
+<footer id="foot"></footer>
+<div class="tip" id="tip"></div>
+
+<script>
+const G = {"nodes": [{"id": "hippocampus", "full": "hippocampus", "acr": null, "type": "region", "label": "hippocampus", "zh": "海马"}, {"id": "cognitive_impairment", "full": "cognitive_impairment", "acr": null, "type": "function", "label": "cognitive_impairment", "zh": "认知损害"}, {"id": "LH", "full": "lateral hypothalamus", "acr": "LH", "type": "region", "label": "LH", "zh": "下丘脑外侧区"}, {"id": "PREBÖTC", "full": "pre-Bötzinger complex", "acr": "preBötC", "type": "region", "label": "preBötC", "zh": "前包钦格复合体"}, {"id": "PVN", "full": "paraventricular nucleus of the hypothalamus", "acr": "PVN", "type": "region", "label": "PVN", "zh": "下丘脑室旁核"}, {"id": "arousal", "full": "arousal", "acr": null, "type": "function", "label": "arousal", "zh": "唤醒"}, {"id": "RSC", "full": "retrosplenial cortex", "acr": "RSC", "type": "region", "label": "RSC", "zh": "压后皮层"}, {"id": "ACC", "full": "anterior cingulate cortex", "acr": "ACC", "type": "region", "label": "ACC", "zh": "前扣带皮层"}, {"id": "ZI", "full": "zona incerta", "acr": "ZI", "type": "region", "label": "ZI", "zh": "未定带"}, {"id": "DLPFC", "full": "dorsolateral prefrontal cortex", "acr": "DLPFC", "type": "region", "label": "DLPFC", "zh": "背外侧前额叶皮层"}, {"id": "FEF", "full": "frontal eye field", "acr": "FEF", "type": "region", "label": "FEF", "zh": "额叶眼动区"}, {"id": "PVT", "full": "paraventricular nucleus of thalamus", "acr": "PVT", "type": "region", "label": "PVT", "zh": "丘脑室旁核"}, {"id": "LSI", "full": "lateral septum", "acr": "LSI", "type": "region", "label": "LSI", "zh": "外侧隔核"}, {"id": "MR", "full": "raphe nuclei", "acr": "MR", "type": "region", "label": "MR", "zh": "中缝核"}, {"id": "XII MN", "full": "hypoglossal nucleus", "acr": "XII MN", "type": "region", "label": "XII MN", "zh": "舌下神经核"}, {"id": "MB", "full": "mushroom body", "acr": "MB", "type": "region", "label": "MB", "zh": "蘑菇体"}, {"id": "sleep", "full": "sleep", "acr": null, "type": "function", "label": "sleep", "zh": "睡眠"}, {"id": "prefrontal cortex", "full": "prefrontal cortex", "acr": null, "type": "region", "label": "prefrontal cortex", "zh": "前额叶皮层"}, {"id": "CA1", "full": "hippocampal formation", "acr": "CA1", "type": "region", "label": "CA1", "zh": "海马结构"}, {"id": "memory_consolidation", "full": "memory_consolidation", "acr": null, "type": "function", "label": "memory_consolidation", "zh": "记忆巩固"}, {"id": "LTRN", "full": "thalamic reticular nucleus", "acr": "lTRN", "type": "region", "label": "lTRN", "zh": "丘脑网状核"}, {"id": "SLD", "full": "sublaterodorsal nucleus", "acr": "SLD", "type": "region", "label": "SLD", "zh": "下外侧背核"}, {"id": "wakefulness", "full": "wakefulness", "acr": null, "type": "function", "label": "wakefulness", "zh": "觉醒"}, {"id": "LC", "full": "locus coeruleus", "acr": "LC", "type": "region", "label": "LC", "zh": "蓝斑"}, {"id": "VTA", "full": "ventral tegmental area", "acr": "VTA", "type": "region", "label": "VTA", "zh": "腹侧被盖区"}, {"id": "sleep_wake_cycle", "full": "sleep_wake_cycle", "acr": null, "type": "function", "label": "sleep_wake_cycle", "zh": "睡眠-觉醒周期"}, {"id": "spatial_memory", "full": "spatial_memory", "acr": null, "type": "function", "label": "spatial_memory", "zh": "空间记忆"}, {"id": "DMN", "full": "default mode network", "acr": "DMN", "type": "region", "label": "DMN", "zh": "默认模式网络"}, {"id": "MTL", "full": "medial temporal lobe", "acr": "MTL", "type": "region", "label": "MTL", "zh": "内侧颞叶"}, {"id": "memory_generalization", "full": "memory_generalization", "acr": null, "type": "function", "label": "memory_generalizati…", "zh": "记忆泛化"}, {"id": "temporal lobe", "full": "temporal lobe", "acr": null, "type": "region", "label": "temporal lobe", "zh": "颞叶"}, {"id": "MOFC", "full": "medial orbitofrontal cortex", "acr": "mOFC", "type": "region", "label": "mOFC", "zh": "内侧眶额皮层"}, {"id": "striatum", "full": "striatum", "acr": null, "type": "region", "label": "striatum", "zh": "纹状体"}, {"id": "cerebral cortex", "full": "cerebral cortex", "acr": null, "type": "region", "label": "cerebral cortex", "zh": "大脑皮层"}, {"id": "TRN", "full": "thalamic reticular nucleus", "acr": "TRN", "type": "region", "label": "TRN", "zh": "丘脑网状核"}, {"id": "frontoparietal network", "full": "frontoparietal network", "acr": null, "type": "region", "label": "frontoparietal netw…", "zh": "额顶网络"}], "links": [{"s": "hippocampus", "t": "cognitive_impairment", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "decrease", "species": "mouse", "quote": "OTUB1 mitigates sleep deprivation-induced cognitive impairment and neuroinflammation in the hippocampus by stabilizing HSP70 and attenuating inflammatory responses.", "confidence": 0.85, "pmid": "42479290"}, {"s": "LH", "t": "PREBÖTC", "relation": "projects_to", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "Chemogenetic activation of LH neurons projecting to the preBötC increased respiratory rate in an ORX signaling-dependent manner", "confidence": 0.95, "pmid": "42476913"}, {"s": "PVN", "t": "PREBÖTC", "relation": "projects_to", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "activation of PVN neurons projecting to the preBötC enhanced active movements/arousal of mice but had minimal effects on respiratory parameters.", "confidence": 0.9, "pmid": "42476913"}, {"s": "PVN", "t": "arousal", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "activation of PVN neurons projecting to the preBötC enhanced active movements/arousal of mice but had minimal effects on respiratory parameters.", "confidence": 0.85, "pmid": "42476913"}, {"s": "RSC", "t": "ACC", "relation": "modulates", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "RSCGlu inputs enhanced ACCGlu activity, and chemogenetic manipulation of the RSCGlu-ACCGlu circuit induced pain in naive mice", "confidence": 0.95, "pmid": "42475176"}, {"s": "ACC", "t": "ZI", "relation": "projects_to", "evidence_type": "anatomical_projection", "directed": true, "direction": "increase", "species": "mouse", "quote": "ACCGlu neurons densely innervate ZI, activating ZIGABA neurons after SD.", "confidence": 0.95, "pmid": "42475176"}, {"s": "DLPFC", "t": "FEF", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "decrease", "species": "human", "quote": "Functional connectivity strength decreased between the DLPFC and the FEF, PMC-and-SMA, and the primary somatosensory cortex (S1)", "confidence": 0.85, "pmid": "42471308"}, {"s": "PVT", "t": "LSI", "relation": "projects_to", "evidence_type": "anatomical_projection", "directed": true, "direction": "na", "species": "mouse", "quote": "dense glutamatergic projections from the PVT that are in close spatial apposition to GABAergic neurons within the intermediate part of the lateral septum", "confidence": 0.95, "pmid": "42436971"}, {"s": "MR", "t": "XII MN", "relation": "projects_to", "evidence_type": "anatomical_projection", "directed": true, "direction": "na", "species": "mouse", "quote": "MR serotonergic neurons, which project to XII MN and stimulate pharyngeal muscles during sleep", "confidence": 0.95, "pmid": "42427597"}, {"s": "MB", "t": "sleep", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "other", "quote": "impairment of autophagy in the Drosophila mushroom body (MB) induces brain-wide, post-transcriptional remodeling of presynaptic active zones", "confidence": 0.8, "pmid": "42420489"}, {"s": "prefrontal cortex", "t": "PVT", "relation": "connected_with", "evidence_type": "other", "directed": false, "direction": "na", "species": "other", "quote": "the paraventricular thalamus (PVT) has emerged as a state-dependent hub connected to the prefrontal cortex and limbic regions", "confidence": 0.85, "pmid": "42419760"}, {"s": "CA1", "t": "memory_consolidation", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "decrease", "species": "rat", "quote": "On-SWR BBN presentation during post-learning sleep abolished memory retention 24 h after learning while sparing memory immediately after sleep", "confidence": 0.85, "pmid": "42419296"}, {"s": "ACC", "t": "ZI", "relation": "projects_to", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "Optogenetic activation of the ACC→ZI circuit rescued social impairments, whereas activation of the ACC→lTRN pathway restored attentional performance", "confidence": 0.95, "pmid": "42418582"}, {"s": "ACC", "t": "LTRN", "relation": "projects_to", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "Optogenetic activation of the ACC→ZI circuit rescued social impairments, whereas activation of the ACC→lTRN pathway restored attentional performance", "confidence": 0.95, "pmid": "42418582"}, {"s": "SLD", "t": "wakefulness", "relation": "necessary_for", "evidence_type": "causal_manipulation", "directed": true, "direction": "decrease", "species": "mouse", "quote": "optogenetic silencing of SLDGABA neurons rapidly induced robust wakefulness, while enhancing cortical and motor activity", "confidence": 0.9, "pmid": "42418402"}, {"s": "LC", "t": "memory_consolidation", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "rhythmic locus coeruleus (LC) activity shaping sleep architecture and supporting memory consolidation", "confidence": 0.85, "pmid": "42395575"}, {"s": "VTA", "t": "sleep_wake_cycle", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "na", "species": "mouse", "quote": "disrupt Clock selectively in ventral tegmental area dopamine neurons... observed the functional consequences across circadian and sleep-wake measurements", "confidence": 0.8, "pmid": "42395562"}, {"s": "hippocampus", "t": "spatial_memory", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "decrease", "species": "rat", "quote": "Wuyou Decoction against hippocampal neuronal apoptosis and mitochondrial damage in a rat model of chronic sleep deprivation... Learning and memory abilities were assessed", "confidence": 0.75, "pmid": "42392722"}, {"s": "DMN", "t": "hippocampus", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "na", "species": "human", "quote": "discuss how specific DMN subsystems coordinate with the hippocampus during reactivation", "confidence": 0.8, "pmid": "42381892"}, {"s": "hippocampus", "t": "spatial_memory", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "supplementation with UA proved beneficial in counteracting chronic SD-induced cognitive deterioration and anxiety-like behaviors by attenuating hippocampal ferroptosis", "confidence": 0.75, "pmid": "42372600"}, {"s": "MTL", "t": "memory_generalization", "relation": "involved_in", "evidence_type": "functional_connectivity", "directed": true, "direction": "increase", "species": "human", "quote": "Greater MTL flexibility was associated with better generalization (r=0.367, p=.017).", "confidence": 0.85, "pmid": "42369475"}, {"s": "temporal lobe", "t": "ACC", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "increase", "species": "human", "quote": "Resting-state fMRI revealed significant group differences in functional connectivity between the bilateral temporal lobe seed and the left ACC/mOFC cluster", "confidence": 0.85, "pmid": "42369362"}, {"s": "temporal lobe", "t": "MOFC", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "increase", "species": "human", "quote": "Resting-state fMRI revealed significant group differences in functional connectivity between the bilateral temporal lobe seed and the left ACC/mOFC cluster", "confidence": 0.85, "pmid": "42369362"}, {"s": "striatum", "t": "cerebral cortex", "relation": "connected_with", "evidence_type": "coactivation", "directed": false, "direction": "na", "species": "human", "quote": "modeling of over 3 billion voxel-frame-wise striatal coactivation profiles with cortex in functional magnetic resonance imaging (fMRI)", "confidence": 0.85, "pmid": "42368010"}, {"s": "TRN", "t": "sleep_wake_cycle", "relation": "involved_in", "evidence_type": "causal_manipulation", "directed": true, "direction": "increase", "species": "mouse", "quote": "Acupuncture activates GABA neurons in the TRN, thereby regulating the sleep-wake cycle in the context of PCPA-induced insomnia.", "confidence": 0.9, "pmid": "42365403"}, {"s": "DMN", "t": "frontoparietal network", "relation": "connected_with", "evidence_type": "functional_connectivity", "directed": false, "direction": "increase", "species": "human", "quote": "The fMRI analysis revealed enhanced connectivity within default mode network and between default mode network and Frontoparietal network after active treatment.", "confidence": 0.85, "pmid": "42363162"}]};
+const ECOL={anatomical_projection:"#4f7fe0",functional_connectivity:"#dd9a2f",causal_manipulation:"#e05a58",
+  structural_connectivity:"#1f9e97",coactivation:"#9c76d8",lesion_deficit:"#d1699e",correlation:"#c9a24b",other:"#8a93a3"};
+const ELAB={anatomical_projection:"解剖投射",functional_connectivity:"功能连接",causal_manipulation:"因果操纵",
+  structural_connectivity:"结构连接",coactivation:"共激活",lesion_deficit:"损伤缺陷",correlation:"相关性",other:"其他"};
+const RLAB={projects_to:"投射至",connected_with:"连接",modulates:"调制",encodes:"编码",
+  selective_for:"选择性",necessary_for:"必需",involved_in:"参与",correlated_with:"相关"};
+const ecol=t=>ECOL[t]||ECOL.other, elab=t=>ELAB[t]||t, rlab=r=>RLAB[r]||r;
+
+const nodeById={};
+const N=G.nodes.map(nd=>{const o=Object.assign({},nd,{deg:0,x:0,y:0,vx:0,vy:0,fx:null,fy:null});nodeById[nd.id]=o;return o;});
+const links=G.links.map(l=>Object.assign({},l,{s:nodeById[l.s],t:nodeById[l.t]})).filter(l=>l.s&&l.t);
+links.forEach(l=>{l.s.deg++;l.t.deg++;});
+const ETYPES=[...new Set(links.map(l=>l.evidence_type))].sort((a,b)=>
+  links.filter(l=>l.evidence_type===b).length-links.filter(l=>l.evidence_type===a).length);
+const active=new Set(ETYPES);
+let selected=null;
+
+const svg=document.getElementById("svg"),SVGNS="http://www.w3.org/2000/svg";
+let W=900,H=600;
+const defs=document.createElementNS(SVGNS,"defs");
+ETYPES.forEach(t=>{const m=document.createElementNS(SVGNS,"marker");
+  m.setAttribute("id","arw-"+t);m.setAttribute("viewBox","0 0 10 10");m.setAttribute("refX","9");
+  m.setAttribute("refY","5");m.setAttribute("markerWidth","6");m.setAttribute("markerHeight","6");
+  m.setAttribute("orient","auto-start-reverse");
+  const p=document.createElementNS(SVGNS,"path");p.setAttribute("d","M0 0 L10 5 L0 10 z");
+  p.setAttribute("fill",ecol(t));m.appendChild(p);defs.appendChild(m);});
+svg.appendChild(defs);
+const gEdges=document.createElementNS(SVGNS,"g"),gNodes=document.createElementNS(SVGNS,"g");
+svg.appendChild(gEdges);svg.appendChild(gNodes);
+
+const edgeEls=links.map(l=>{const p=document.createElementNS(SVGNS,"path");
+  p.setAttribute("class","edge");p.setAttribute("stroke",ecol(l.evidence_type));
+  if(l.directed)p.setAttribute("marker-end","url(#arw-"+l.evidence_type+")");
+  if(l.direction==="decrease")p.setAttribute("stroke-dasharray","5 4");
+  p.addEventListener("mouseenter",e=>showTip(e,l));p.addEventListener("mousemove",moveTip);
+  p.addEventListener("mouseleave",hideTip);gEdges.appendChild(p);return p;});
+N.forEach(n=>{const g=document.createElementNS(SVGNS,"g");g.setAttribute("class","node");
+  const r=6+Math.min(n.deg,8)*1.5;let shp;
+  if(n.type==="region"){shp=document.createElementNS(SVGNS,"circle");shp.setAttribute("r",r);}
+  else{shp=document.createElementNS(SVGNS,"rect");const s=r*1.7;shp.setAttribute("x",-s/2);
+    shp.setAttribute("y",-s/2);shp.setAttribute("width",s);shp.setAttribute("height",s);
+    shp.setAttribute("transform","rotate(45)");shp.setAttribute("rx",1.5);}
+  shp.setAttribute("class","shp");
+  g.appendChild(shp);
+  if(n.deg>=2){const t=document.createElementNS(SVGNS,"text");t.setAttribute("text-anchor","middle");
+    t.setAttribute("dy",-(r+4));t.textContent=n.label;g.appendChild(t);}   // 叶子节点不常显标签，悬停再显
+  gNodes.appendChild(g);
+  g.addEventListener("pointerdown",e=>startDrag(e,n,g));g.addEventListener("click",()=>select(n));
+  g.addEventListener("mouseenter",e=>showNodeTip(e,n));g.addEventListener("mousemove",moveTip);
+  g.addEventListener("mouseleave",hideTip);
+  n._g=g;});
+
+const REP=3200+N.length*55;   // 斥力随节点数增强，大图铺得更开更圆
+function simulate(iter){for(let k=0;k<iter;k++){
+  for(const a of N){for(const b of N){if(a===b)continue;
+    let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2);const rep=REP/d2;
+    a.vx+=dx/d*rep;a.vy+=dy/d*rep;}
+    a.vx+=(W/2-a.x)*.0035;a.vy+=(H/2-a.y)*.0035;}
+  for(const l of links){let dx=l.t.x-l.s.x,dy=l.t.y-l.s.y,d=Math.sqrt(dx*dx+dy*dy)+.01;
+    const f=(d-95)*.02;l.s.vx+=dx/d*f;l.s.vy+=dy/d*f;l.t.vx-=dx/d*f;l.t.vy-=dy/d*f;}
+  for(const a of N){if(a.fx!=null){a.x=a.fx;a.y=a.fy;a.vx=a.vy=0;continue;}
+    a.x+=a.vx*.5;a.y+=a.vy*.5;a.vx*=.82;a.vy*=.82;}}}   // 不硬夹边界，交给 fitView 缩放到视口
+
+function fitView(padT,padX,padB){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const n of N){x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);}
+  const gw=Math.max(x1-x0,1),gh=Math.max(y1-y0,1);
+  const s=Math.min((W-2*padX)/gw,(H-padT-padB)/gh);
+  const ox=(W-gw*s)/2-x0*s, oy=padT-y0*s;
+  for(const n of N){n.x=n.x*s+ox;n.y=n.y*s+oy;}
+}
+
+function render(){
+  links.forEach((l,i)=>{const on=active.has(l.evidence_type),rel=selected&&(l.s===selected||l.t===selected);
+    const e=edgeEls[i];e.style.display=on?"":"none";
+    e.setAttribute("class","edge"+(!on?"":selected?(rel?" hot":" dim"):""));
+    const sx=l.s.x,sy=l.s.y,tx=l.t.x,ty=l.t.y,mx=(sx+tx)/2,my=(sy+ty)/2,dx=tx-sx,dy=ty-sy,nl=Math.hypot(dx,dy)||1;
+    const cx=mx-dy/nl*16,cy=my+dx/nl*16;e.setAttribute("d",`M${sx} ${sy} Q${cx} ${cy} ${tx} ${ty}`);});
+  N.forEach(n=>{const vis=links.some(l=>(l.s===n||l.t===n)&&active.has(l.evidence_type));
+    n._g.style.display=vis?"":"none";let cls="node";
+    if(selected){if(n===selected)cls+=" sel";
+      else if(!links.some(l=>active.has(l.evidence_type)&&((l.s===selected&&l.t===n)||(l.t===selected&&l.s===n))))cls+=" dim";}
+    n._g.setAttribute("class",cls);n._g.setAttribute("transform",`translate(${n.x} ${n.y})`);});
+}
+
+let drag=null;
+function startDrag(e,n,g){e.stopPropagation();drag={n,g};g.classList.add("dragging");
+  n.fx=n.x;n.fy=n.y;g.setPointerCapture(e.pointerId);}
+svg.addEventListener("pointermove",e=>{if(!drag)return;const pt=toSvg(e.clientX,e.clientY);
+  drag.n.x=drag.n.fx=pt.x;drag.n.y=drag.n.fy=pt.y;render();});
+svg.addEventListener("pointerup",()=>{if(!drag)return;drag.g.classList.remove("dragging");
+  drag.n.fx=drag.n.fy=null;drag=null;});   // 释放即停留，不再重排，保持已适配好的布局
+function toSvg(cx,cy){const r=svg.getBoundingClientRect();return{x:(cx-r.left)/r.width*W,y:(cy-r.top)/r.height*H};}
+
+function select(n){selected=n;render();renderPanel(n);}
+function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function renderPanel(n){
+  const out=links.filter(l=>l.s===n&&active.has(l.evidence_type));
+  const inc=links.filter(l=>l.t===n&&active.has(l.evidence_type));
+  const card=(l,incoming)=>{const other=incoming?l.s:l.t,c=ecol(l.evidence_type);
+    const dirTag=l.direction==="increase"?`<span class="dir up">▲ 增强</span>`:
+      l.direction==="decrease"?`<span class="dir down">▼ 减弱</span>`:"";
+    return `<div class="edge-card" style="--c:${c}">
+      <div class="flow"><span>${esc(l.s.label)}</span>
+        <span class="arr">${l.directed?"→":"—"}</span><span>${esc(l.t.label)}</span>
+        <span class="badge" style="--c:${c}">${elab(l.evidence_type)}</span></div>
+      <div class="rel">${rlab(l.relation)}${dirTag?" · ":""}</div>
+      <div class="meta">${dirTag}<span>${esc(l.species)}</span>
+        ${l.confidence!=null?`<span>conf ${l.confidence}</span>`:""}
+        <a class="pmid" href="https://pubmed.ncbi.nlm.nih.gov/${l.pmid}/" target="_blank" rel="noopener">PMID ${l.pmid}</a></div>
+      <p class="quote">"${esc(l.quote)}"</p></div>`;};
+  document.getElementById("aside").innerHTML=`
+    <h2 class="region-name">${esc(n.zh||n.full)}</h2>
+    <div class="region-sub mono">${esc(n.full)}${n.acr?" · "+esc(n.acr):""} · ${n.type==="region"?"脑区":"细胞类型/功能"}</div>
+    <div class="kv"><span>输出 ${out.length}</span><span>输入 ${inc.length}</span><span>度 ${n.deg}</span></div>
+    ${out.length?`<div class="grp-h">输出连接 · OUTGOING</div>${out.map(l=>card(l,false)).join("")}`:""}
+    ${inc.length?`<div class="grp-h">输入连接 · INCOMING</div>${inc.map(l=>card(l,true)).join("")}`:""}
+    ${!out.length&&!inc.length?`<div class="panel-empty">当前过滤下无可见连接</div>`:""}`;
+}
+
+const fbox=document.getElementById("filters");
+ETYPES.forEach(t=>{const cnt=links.filter(l=>l.evidence_type===t).length;
+  const b=document.createElement("button");b.className="chip";b.type="button";
+  b.setAttribute("aria-pressed","true");b.style.setProperty("--c",ecol(t));
+  b.innerHTML=`<span class="dot"></span>${elab(t)} <span style="color:var(--muted)">${cnt}</span>`;
+  b.onclick=()=>{if(active.has(t)){active.delete(t);b.setAttribute("aria-pressed","false");}
+    else{active.add(t);b.setAttribute("aria-pressed","true");}
+    if(selected)renderPanel(selected);render();};fbox.appendChild(b);});
+
+const tip=document.getElementById("tip");
+function showTip(e,l){tip.innerHTML=`<b>${esc(l.s.label)} ${l.directed?"→":"—"} ${esc(l.t.label)}</b> · ${elab(l.evidence_type)}<br>${rlab(l.relation)} · ${esc(l.species)}<div class="tq">"${esc(l.quote)}"</div>`;tip.style.opacity=1;moveTip(e);}
+function showNodeTip(e,n){if(drag)return;tip.innerHTML=`<b>${esc(n.zh||n.full)}</b><br><span style="opacity:.8">${esc(n.full)}${n.acr?" · "+esc(n.acr):""}</span><br>${n.type==="region"?"脑区":"细胞类型/功能"} · 度 ${n.deg}`;tip.style.opacity=1;moveTip(e);}
+function moveTip(e){tip.style.left=Math.min(e.clientX+14,innerWidth-290)+"px";tip.style.top=(e.clientY+14)+"px";}
+function hideTip(){tip.style.opacity=0;}
+
+document.getElementById("foot").innerHTML=
+  `<span>${N.length} 个节点 · ${links.length} 条连接</span>`+
+  `<span class="lg"><span class="sh"></span>脑区</span>`+
+  `<span class="lg"><span class="sh dia"></span>功能/细胞</span>`+
+  `<span class="lg"><span class="ln"></span>有向(投射/调制)</span>`+
+  `<span class="lg"><span class="ln dash"></span>减弱</span>`+
+  `<span class="spacer" style="flex:1"></span><span>数据来源 PubMed 摘要抽取 · 点节点看证据引文与 PMID</span>`;
+
+document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")
+  ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+  document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");};
+
+let anim=null;
+function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:900;H=r.height>50?r.height:600;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);}
+function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
+  n.x=W/2+Math.cos(a)*Math.min(W,H)*0.35;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.3;});
+  simulate(600);fitView(56,54,34);render();}
+addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
+requestAnimationFrame(()=>requestAnimationFrame(init));
+</script>
