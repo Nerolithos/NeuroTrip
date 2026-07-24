@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+const appPath = `${process.cwd()}/src/App.tsx`;
+const scenePath = `${process.cwd()}/src/scenes/MemoryGameScene/MemoryGameScene.tsx`;
+const cssPath = `${process.cwd()}/src/scenes/MemoryGameScene/memoryGame.css`;
+const htmlPath = `${process.cwd()}/Memory_game.html`;
+const appSource = readFileSync(appPath, 'utf8');
+const sceneSource = readFileSync(scenePath, 'utf8');
+const cssSource = readFileSync(cssPath, 'utf8');
+const htmlSource = readFileSync(htmlPath, 'utf8');
+test('memory-game scene is routed and hosts Memory_game html in full-screen container', () => {
+    assert.match(appSource, /\/scene\/memory-game/);
+    assert.match(sceneSource, /Memory_game\.html\?raw/);
+    assert.match(sceneSource, /memory-game-experience/);
+    assert.match(sceneSource, /window\.__MEMORY_GAME_NAVIGATE/);
+    assert.match(sceneSource, /window\.__MEMORY_GAME_SET_APP_LANG/);
+    assert.match(sceneSource, /window\.__MEMORY_GAME_API\?\.setLang/);
+    assert.match(cssSource, /memory-game-page/);
+    assert.match(cssSource, /memory-game-stage/);
+});
+test('memory-game html exposes top-right controls and completion continue action', () => {
+    assert.match(htmlSource, /id="mapbtn"/);
+    assert.match(htmlSource, /id="srcbtn"/);
+    assert.match(htmlSource, /mapLabel/);
+    assert.match(htmlSource, /sourcesLabel/);
+    assert.match(htmlSource, /continueBtn/);
+    assert.match(htmlSource, /window\.__MEMORY_GAME_API/);
+    assert.match(htmlSource, /window\.__MEMORY_GAME_NAVIGATE/);
+});

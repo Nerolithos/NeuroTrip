@@ -152,9 +152,12 @@
   .tick.on{background:var(--ink)} .tick.past{background:rgba(90,75,55,.42)}
   #top{pointer-events:none}
   #top>*{pointer-events:auto}
-  #langbtn{background:none;border:none;box-shadow:none;padding:2px 0;
-    font-size:11px;letter-spacing:.18em;color:var(--faint);cursor:pointer}
-  #langbtn:hover{color:var(--ink);background:none;transform:none}
+  .top-right{display:flex;align-items:center;gap:8px}
+  .top-link,
+  #langbtn{background:none;border:1px solid rgba(120,110,95,.26);box-shadow:none;padding:5px 10px;
+    font-size:11px;letter-spacing:.14em;color:var(--faint);cursor:pointer;border-radius:999px}
+  .top-link:hover,
+  #langbtn:hover{color:var(--ink);border-color:rgba(67,61,52,.4);background:rgba(255,255,255,.46);transform:none}
 </style>
 </head>
 <body>
@@ -162,7 +165,11 @@
 <div id="top">
   <span id="topname"></span>
   <span class="ticks" id="ticks"></span>
-  <button id="langbtn">EN</button>
+  <div class="top-right">
+    <button id="mapbtn" class="top-link">脑网络地图</button>
+    <button id="srcbtn" class="top-link">参考来源</button>
+    <button id="langbtn">EN</button>
+  </div>
 </div>
 <div id="stage"></div>
 
@@ -220,12 +227,25 @@ const WARMTH = ["none",
 const COLD   = "saturate(.74) brightness(1.03) hue-rotate(-3deg)";
 
 /* ---------- 语言 ---------- */
-let L = localStorage.getItem("room-lang") || (/^zh/i.test(navigator.language||"") ? "zh" : "en");
+let L = window.__MEMORY_GAME_LANG || localStorage.getItem("room-lang") || (/^zh/i.test(navigator.language||"") ? "zh" : "en");
 const X = () => TXT[L];
+const CONTINUE_PATH = window.__MEMORY_GAME_CONTINUE_PATH || "/scene/default-mode-network";
+
+const navTo = path => {
+  if (typeof window.__MEMORY_GAME_NAVIGATE === "function") {
+    window.__MEMORY_GAME_NAVIGATE(path);
+    return;
+  }
+  window.location.href = path;
+};
+
+const continueToNextScene = () => navTo(CONTINUE_PATH);
 
 const TXT = {
 zh: {
   langBtn:"EN",
+  mapLabel:"脑网络地图",
+  sourcesLabel:"参考来源",
   steps:["看一眼","第一次重建","别人的说法","第二次重建","想象一下","一个问题","第三次重建","对照"],
 
   proTitle:"房 间",
@@ -298,12 +318,15 @@ zh: {
   thesisStudy:'褪色偏差（fading affect bias），Walker, Skowronski &amp; Thompson 2003：负面情绪随时间衰减得比正面快，过去于是自动变好看——不是你软弱，是默认设置。<br>Nader, Schafe &amp; LeDoux 2000：唤起一段旧记忆的同时阻断蛋白质合成，记忆会消失。它只在被想起的那一刻可以改写，也只在那一刻是脆弱的。',
   thesisQuote:"你想回去的那个从前，<br>是你自己一遍一遍，调出来的颜色。",
   againBtn:"再 来 一 次", keepBtn:"就 让 它 暖 着",
+  continueBtn:"继 续",
 
   keepH2:"好",
   keepQuote:"那就别去对了。<br><br>一间比真实更好看的屋子，<br>是你给自己的礼物，不是错误。<br><br><b>只是要知道，它是你做的——<br>不是它本来的样子。</b>"
 },
 en: {
   langBtn:"中文",
+  mapLabel:"Brain Map",
+  sourcesLabel:"Sources",
   steps:["A look","Rebuild 1","A witness","Rebuild 2","Imagine","A question","Rebuild 3","Compare"],
 
   proTitle:"THE ROOM",
@@ -376,6 +399,7 @@ en: {
   thesisStudy:"Fading affect bias, Walker, Skowronski &amp; Thompson 2003: negative emotion fades faster than positive emotion, so the past drifts pleasant on its own — not weakness, just the default setting.<br>Nader, Schafe &amp; LeDoux 2000: block protein synthesis at the moment an old memory is recalled, and it disappears. A memory is only editable — and only fragile — in the instant it's being remembered.",
   thesisQuote:"The past you want to go back to<br>is a color you tuned yourself, one recall at a time.",
   againBtn:"AGAIN", keepBtn:"LEAVE IT WARM",
+  continueBtn:"CONTINUE",
 
   keepH2:"Alright",
   keepQuote:"Then don't go check.<br><br>A room more beautiful than the real one<br>is a gift you gave yourself, not a mistake.<br><br><b>Just know that you made it —<br>it isn't how it actually was.</b>"
@@ -399,11 +423,18 @@ function marks(i){
     b.appendChild(d);
   });
   $("langbtn").textContent = X().langBtn;
+  $("mapbtn").textContent = X().mapLabel;
+  $("srcbtn").textContent = X().sourcesLabel;
 }
 
-function setLang(next){
+function setLang(next, syncApp=true){
+  if(next===L) return;
   L=next; localStorage.setItem("room-lang",L);
   document.documentElement.lang = L==="zh" ? "zh-CN" : "en";
+  window.__MEMORY_GAME_LANG = L;
+  if(syncApp && typeof window.__MEMORY_GAME_SET_APP_LANG === "function") {
+    window.__MEMORY_GAME_SET_APP_LANG(L);
+  }
   reset();
 }
 
@@ -725,17 +756,23 @@ function scrThesis(){
     <div class="row">
       <button id="again">${t.againBtn}</button>
       <button class="ghost" id="keep">${t.keepBtn}</button>
+      <button id="continue">${t.continueBtn}</button>
     </div>
   `, true);
   $("again").onclick=reset;
+  $("continue").onclick=continueToNextScene;
   $("keep").onclick=()=>{
     show(`
       <h2>${t.keepH2}</h2>
       <p class="quote">${t.keepQuote}</p>
       <div class="sp"></div>
-      <button class="ghost" id="again2">${t.againBtn}</button>
+      <div class="row">
+        <button class="ghost" id="again2">${t.againBtn}</button>
+        <button id="continue2">${t.continueBtn}</button>
+      </div>
     `);
     $("again2").onclick=reset;
+    $("continue2").onclick=continueToNextScene;
   };
 }
 
@@ -743,7 +780,15 @@ function reset(){ S.rounds=[]; S.round=0; S.answered=null; S.imgShape=null; S.im
 
 /* ---------- 启动 ---------- */
 document.documentElement.lang = L==="zh" ? "zh-CN" : "en";
+$("mapbtn").onclick = ()=>navTo("/map");
+$("srcbtn").onclick = ()=>navTo("/sources");
 $("langbtn").onclick = ()=>setLang(L==="zh"?"en":"zh");
+window.__MEMORY_GAME_API = {
+  setLang: next => setLang(next, false),
+  destroy: () => {
+    // no-op hook for host cleanup symmetry
+  }
+};
 scrPrologue();
 document.addEventListener("keydown",e=>{
   if(e.key==="s"&&S._skip){ S._skip(); S._skip=null; return; }   // 调试：跳过读秒

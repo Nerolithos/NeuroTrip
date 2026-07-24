@@ -643,6 +643,7 @@ export const HippocampusScene = () => {
   const [roundTwoImage, setRoundTwoImage] = useState<string | null>(null)
   const [roundOneModel, setRoundOneModel] = useState('')
   const [roundTwoModel, setRoundTwoModel] = useState('')
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -714,8 +715,13 @@ export const HippocampusScene = () => {
     setRoundTwoImage(null)
     setRoundOneModel('')
     setRoundTwoModel('')
+    setPreviewImage(null)
     setErrorMessage('')
     setStage(nextStage)
+  }
+
+  const openPreviewImage = (src: string, alt: string) => {
+    setPreviewImage({ src, alt })
   }
 
   const retryCurrentImage = () => {
@@ -880,7 +886,7 @@ export const HippocampusScene = () => {
       }
       regionId="hippocampus"
       previousPath="/scene/amygdala"
-      nextPath="/scene/default-mode-network"
+      nextPath="/scene/memory-game"
     >
       <div className="hippo-rebuild-layout">
         <section className="hippo-upper-stage" aria-label={isZh ? '记忆重建流程' : 'Memory reconstruction flow'}>
@@ -976,7 +982,17 @@ export const HippocampusScene = () => {
                 {roundOneImage ? (
                   <div className="hippo-generated-block">
                     <p className="hippo-generated-title">{isZh ? '第一轮结果' : 'Round-1 result'}</p>
-                    <img src={roundOneImage} alt={isZh ? '第一轮重建图' : 'Round-1 reconstructed image'} />
+                    <img
+                      src={roundOneImage}
+                      alt={isZh ? '第一轮重建图' : 'Round-1 reconstructed image'}
+                      className="hippo-click-preview"
+                      onClick={() =>
+                        openPreviewImage(
+                          roundOneImage,
+                          isZh ? '第一轮重建图（放大）' : 'Round-1 reconstructed image (enlarged)',
+                        )
+                      }
+                    />
                     <p className="prototype-note">Model: {roundOneModel}</p>
                   </div>
                 ) : null}
@@ -1025,7 +1041,17 @@ export const HippocampusScene = () => {
                   <figcaption>{isZh ? `原始图像 · ${currentMemoryCard.fileName}` : `Original · ${currentMemoryCard.fileName}`}</figcaption>
                 </figure>
                 <figure>
-                  <img src={roundTwoImage} alt={isZh ? '第二轮重建图像' : 'Second-round reconstruction'} />
+                  <img
+                    src={roundTwoImage}
+                    alt={isZh ? '第二轮重建图像' : 'Second-round reconstruction'}
+                    className="hippo-click-preview"
+                    onClick={() =>
+                      openPreviewImage(
+                        roundTwoImage,
+                        isZh ? '第二轮重建图像（放大）' : 'Second-round reconstruction (enlarged)',
+                      )
+                    }
+                  />
                   <figcaption>{isZh ? '第二轮重建（偏移后）' : 'Round-2 reconstructed (drifted)'}</figcaption>
                 </figure>
               </div>
@@ -1044,6 +1070,28 @@ export const HippocampusScene = () => {
             referrerPolicy="no-referrer"
           />
         </section>
+
+        {previewImage ? (
+          <div
+            className="hippo-preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={isZh ? '放大图像预览' : 'Enlarged image preview'}
+            onClick={() => setPreviewImage(null)}
+          >
+            <div className="hippo-preview-card" onClick={(event) => event.stopPropagation()}>
+              <button
+                type="button"
+                className="hippo-preview-close"
+                aria-label={isZh ? '关闭放大图像' : 'Close enlarged image'}
+                onClick={() => setPreviewImage(null)}
+              >
+                ×
+              </button>
+              <img src={previewImage.src} alt={previewImage.alt} />
+            </div>
+          </div>
+        ) : null}
       </div>
     </SceneFrame>
   )
