@@ -232,6 +232,24 @@ const compactErrorDetail = (raw: string): string => {
   return `${text.slice(0, 177)}...`
 }
 
+const readResponsePayloadSafely = async (response: Response) => {
+  const raw = await response.text()
+  const text = raw.trim()
+  if (!text) {
+    return { payload: null as unknown, raw, parseError: '' }
+  }
+
+  try {
+    return { payload: JSON.parse(text) as unknown, raw, parseError: '' }
+  } catch {
+    const parsed = parseJsonFromText(text)
+    if (parsed) {
+      return { payload: parsed as unknown, raw, parseError: '' }
+    }
+    return { payload: null as unknown, raw, parseError: 'Non-JSON response body' }
+  }
+}
+
 const buildReconstructErrorMessage = (isZh: boolean, failure: ReconstructFailure): string => {
   const status = failure.status
   const endpoint = failure.endpoint || '/api/openrouter'
@@ -467,18 +485,29 @@ const requestReconstructedImage = async (input: {
           signal,
         })
 
+        const { payload: imagePayload, raw: imageRaw, parseError: imageParseError } =
+          await readResponsePayloadSafely(imageResponse)
+
         if (imageResponse.ok) {
-          const imagePayload = await imageResponse.json()
           const imageUrl = parseImageResult(imagePayload)
           if (imageUrl) {
             return { ok: true, imageUrl, model }
           }
+
+          if (imageParseError) {
+            rememberFailure({
+              ok: false,
+              status: imageResponse.status,
+              detail: compactErrorDetail(imageRaw) || imageParseError,
+              endpoint: imageEndpoint,
+            })
+            continue
+          }
         } else {
-          const text = await imageResponse.text()
           rememberFailure({
             ok: false,
             status: imageResponse.status,
-            detail: compactErrorDetail(text),
+            detail: compactErrorDetail(imageRaw),
             endpoint: imageEndpoint,
           })
 
@@ -546,12 +575,14 @@ const requestReconstructedImage = async (input: {
           signal,
         })
 
+        const { payload: chatPayload, raw: chatRaw, parseError: chatParseError } =
+          await readResponsePayloadSafely(chatResponse)
+
         if (!chatResponse.ok) {
-          const text = await chatResponse.text()
           rememberFailure({
             ok: false,
             status: chatResponse.status,
-            detail: compactErrorDetail(text),
+            detail: compactErrorDetail(chatRaw),
             endpoint: chatEndpoint,
           })
 
@@ -561,7 +592,16 @@ const requestReconstructedImage = async (input: {
           continue
         }
 
-        const chatPayload = await chatResponse.json()
+        if (chatParseError) {
+          rememberFailure({
+            ok: false,
+            status: chatResponse.status,
+            detail: compactErrorDetail(chatRaw) || chatParseError,
+            endpoint: chatEndpoint,
+          })
+          continue
+        }
+
         const fallbackImageUrl = parseImageResult(chatPayload)
         if (fallbackImageUrl) {
           return { ok: true, imageUrl: fallbackImageUrl, model }
