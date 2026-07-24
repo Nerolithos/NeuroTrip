@@ -32,6 +32,20 @@ const firstNonEmpty = (...values: Array<string | undefined>) => {
   return ''
 }
 
+const normalizeApiKey = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim()
+  }
+
+  return trimmed
+}
+
 const normalizeImageModel = (model: string) => {
   const normalized = model.trim()
   if (!normalized) return normalized
@@ -78,12 +92,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const provider =
     requestedProvider || (kind === 'image' && isArkModel(model) ? 'ark' : 'openrouter')
 
-  const secret =
+  const secretRaw =
     kind === 'image'
       ? provider === 'ark'
         ? firstNonEmpty(env.imager, env.IMAGER)
         : firstNonEmpty(env.neurotrip, env.NEUROTRIP)
       : firstNonEmpty(env.neurotrip, env.NEUROTRIP, env.imager, env.IMAGER)
+
+  const secret = normalizeApiKey(secretRaw)
 
   if (!secret) {
     return kind === 'image'
