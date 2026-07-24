@@ -15,6 +15,12 @@ export type RealityMatchResult = {
   model: string
 }
 
+export type RealityCardMatchResult = {
+  score: number
+  reason: string
+  model: string
+}
+
 const clamp01 = (value: number) => {
   if (!Number.isFinite(value)) return 0
   if (value < 0) return 0
@@ -145,6 +151,162 @@ const parseReason = (payload: unknown): string => {
   }
 
   return ''
+}
+
+const buildSingleCardPrompt = (input: {
+  label: string
+  isZh: boolean
+  card: RealityImageCard
+}) => {
+  const cardText = `${input.card.label}; tags=${input.card.tags.join('|')}; desc=${input.card.description}`
+
+  if (!input.isZh) {
+    return [
+      'You are a language-association evaluator for one image.',
+      'Score only how strongly the user label semantically associates with this image concept.',
+      'Return strict minified JSON only: {"score":0.00,"reason":"..."}.',
+      'reason must be 2-3 short sentences focused on lexical/semantic association paths.',
+      'Do not mention percentages, confidence, or phrases like "so I think".',
+      `User label: ${input.label}`,
+      `Image concept hint: ${cardText}`,
+    ].join(' ')
+  }
+
+  return [
+    '你是单图语言联想评估器。',
+    '只评估“标签词”与这张图概念之间的语义联想强度，不要写视觉审美判断。',
+    '仅返回最小化 JSON：{"score":0.00,"reason":"..."}。',
+    'reason 必须是 2 到 3 句短句，说明语义场/语词联想路径。',
+    '禁止出现百分比、置信度、以及“所以我认为”之类措辞。',
+    `用户标签：${input.label}`,
+    `图像概念提示：${cardText}`,
+  ].join(' ')
+}
+
+const toDataUrl = async (imageUrl: string): Promise<string | null> => {
+  try {
+    const response = await fetch(imageUrl)
+    if (!response.ok) return null
+
+    const blob = await response.blob()
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        resolve(typeof reader.result === 'string' ? reader.result : null)
+      }
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+const parseSingleScore = (payload: unknown, card: RealityImageCard): number | null => {
+  if (!payload || typeof payload !== 'object') return null
+
+  const directScore = (payload as { score?: unknown }).score
+  if (typeof directScore === 'number') return clamp01(directScore)
+  if (typeof directScore === 'string') {
+    const value = Number.parseFloat(directScore)
+    if (Number.isFinite(value)) return clamp01(value)
+  }
+
+  const directScores = (payload as { scores?: unknown }).scores
+  if (directScores && typeof directScores === 'object') {
+    const raw = (directScores as Record<string, unknown>)[card.id]
+    if (typeof raw === 'number') return clamp01(raw)
+    if (typeof raw === 'string') {
+      const value = Number.parseFloat(raw)
+      if (Number.isFinite(value)) return clamp01(value)
+    }
+  }
+
+  const choices = (payload as { choices?: Array<{ message?: { content?: unknown } }> }).choices
+  const content = choices?.[0]?.message?.content
+  if (typeof content !== 'string' || !content.trim()) return null
+
+  const parsed = parseJsonFromText(content)
+  const parsedScore = parsed?.score
+  if (typeof parsedScore === 'number') return clamp01(parsedScore)
+  if (typeof parsedScore === 'string') {
+    const value = Number.parseFloat(parsedScore)
+    if (Number.isFinite(value)) return clamp01(value)
+  }
+
+  const parsedScores = parsed?.scores
+  if (parsedScores && typeof parsedScores === 'object') {
+    const raw = (parsedScores as Record<string, unknown>)[card.id]
+    if (typeof raw === 'number') return clamp01(raw)
+    if (typeof raw === 'string') {
+      const value = Number.parseFloat(raw)
+      if (Number.isFinite(value)) return clamp01(value)
+    }
+  }
+
+  return null
+}
+
+export const requestRealityCardMatch = async (input: {
+  config: ChatapConfig
+  label: string
+  card: RealityImageCard
+  isZh: boolean
+}): Promise<RealityCardMatchResult | null> => {
+  const { config, label, card, isZh } = input
+  const trimmed = label.trim()
+  if (!trimmed) return null
+
+  const prompt = buildSingleCardPrompt({ label: trimmed, isZh, card })
+  const imageDataUrl = await toDataUrl(card.imageUrl)
+  const imagePayload = imageDataUrl || card.imageUrl
+
+  for (let index = 0; index < config.models.length; index += 1) {
+    const model = config.models[index]
+    if (!model) continue
+
+    const messages: ChatMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imagePayload } },
+        ],
+      },
+    ]
+
+    const body = JSON.stringify({
+      model,
+      messages,
+      temperature: 0.2,
+      siteUrl: config.siteUrl,
+      title: config.title,
+    })
+
+    try {
+      const response = await fetch(config.endpoint, {
+        method: 'POST',
+        headers: buildRequestHeaders(config),
+        body,
+      })
+
+      if (!response.ok) continue
+
+      const payload = await response.json()
+      const score = parseSingleScore(payload, card)
+      if (score == null) continue
+
+      return {
+        score,
+        reason: parseReason(payload),
+        model,
+      }
+    } catch {
+      // try next model candidate
+    }
+  }
+
+  return null
 }
 
 export const requestRealityLabelMatch = async (input: {

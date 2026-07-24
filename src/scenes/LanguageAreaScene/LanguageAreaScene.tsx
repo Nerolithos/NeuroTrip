@@ -5,7 +5,7 @@ import { TerminalWindow } from '../VisualSystemsConsole/components/TerminalWindo
 import '../VisualSystemsConsole/visualSystemsConsole.css'
 import { scoreLabelAffinity } from './languageDecoder'
 import { LanguageKnowledgeGraph } from './components/LanguageKnowledgeGraph'
-import { requestRealityLabelMatch, type RealityImageCard } from './realityMatcher'
+import { requestRealityCardMatch, type RealityImageCard } from './realityMatcher'
 import { resolveChatapConfig, type ChatapConfig } from '../FacePipelineScene/emojiMatcher'
 import './languageArea.css'
 import foxImage from '../../../assets/fox.png'
@@ -57,6 +57,49 @@ const realityCards: RealityImageCard[] = [
   { id: 'c25', label: 'satellite dish', labelZh: '卫星天线', imageUrl: 'https://loremflickr.com/640/420/satellite,dish?lock=125', tags: ['tool', 'device', 'communication'], description: 'satellite communication dish' },
 ]
 
+type CardStage = 'neutral' | 'pending' | 'processing' | 'done' | 'fallback'
+type CardTier = 'neutral' | 'processing' | 'tier-100' | 'tier-80' | 'tier-60' | 'tier-40' | 'tier-20' | 'tier-0'
+
+const summarizeAssociationReason = (input: {
+  rawReason: string
+  fallbackLabel: string
+  fallbackTag: string
+  isZh: boolean
+}) => {
+  const normalizedRaw = input.rawReason
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\d+(\.\d+)?\s*%/g, '')
+    .replace(/confidence/gi, '')
+    .replace(/所以我认为[^。！？.!?]*/g, '')
+    .replace(/so i think[^.?!]*/gi, '')
+
+  const pieces = normalizedRaw
+    .split(/(?<=[。！？.!?])\s+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .slice(0, 3)
+
+  const merged = pieces.join(' ')
+  if (merged.length >= 14) return merged
+
+  if (input.isZh) {
+    return `标签“${input.fallbackLabel}”与该图像在“${input.fallbackTag}”语义场上形成直接联想。语词触发的是概念关联路径，而不是单纯外观匹配。`
+  }
+
+  return `The label "${input.fallbackLabel}" links to this image through the semantic field of "${input.fallbackTag}". The association is concept-driven rather than only visual similarity.`
+}
+
+const tierFromScore = (score: number): CardTier => {
+  if (score >= 0.999) return 'tier-100'
+  if (score >= 0.8) return 'tier-80'
+  if (score >= 0.6) return 'tier-60'
+  if (score >= 0.4) return 'tier-40'
+  if (score >= 0.2) return 'tier-20'
+  return 'tier-0'
+}
+
 export const LanguageAreaScene = () => {
   const language = useUiLanguageStore((state) => state.language)
   const isZh = language === 'zh'
@@ -64,6 +107,10 @@ export const LanguageAreaScene = () => {
 
   const [labelInput, setLabelInput] = useState('animal')
   const [llmRealityScores, setLlmRealityScores] = useState<Record<string, number>>({})
+  const [cardStages, setCardStages] = useState<Record<string, CardStage>>({})
+  const [cardReasons, setCardReasons] = useState<Record<string, string>>({})
+  const [processedCount, setProcessedCount] = useState(0)
+  const [activeCardId, setActiveCardId] = useState('')
   const [matchStatus, setMatchStatus] = useState<'idle' | 'matching' | 'llm' | 'fallback'>('idle')
   const [matchReason, setMatchReason] = useState('')
   const [lastMatchedLabel, setLastMatchedLabel] = useState('')
@@ -76,36 +123,35 @@ export const LanguageAreaScene = () => {
   }, [labelInput])
 
   const scoredReality = useMemo(() => {
-    const merged = localScoredReality.map((entry) => {
+    return localScoredReality.map((entry) => {
+      const stage = cardStages[entry.card.id] || 'neutral'
       const llmScore = llmRealityScores[entry.card.id]
+      const reason = cardReasons[entry.card.id] || ''
+      const hasResolved = stage === 'done' || stage === 'fallback'
+      const score = typeof llmScore === 'number' ? llmScore : entry.score
+
+      let tier: CardTier = 'neutral'
+      if (stage === 'processing') {
+        tier = 'processing'
+      } else if (hasResolved) {
+        tier = tierFromScore(score)
+      }
+
       return {
         card: entry.card,
-        score: typeof llmScore === 'number' ? llmScore : entry.score,
+        score,
+        tier,
+        stage,
+        reason,
       }
     })
+  }, [localScoredReality, cardStages, llmRealityScores, cardReasons])
 
-    const hasResolvedMatch = matchStatus === 'llm' || matchStatus === 'fallback'
-    return merged.map((entry) => {
-      if (!hasResolvedMatch) {
-        return { ...entry, tier: 'neutral' as const }
-      }
-
-      const score = entry.score
-      if (score <= 0.01) {
-        return { ...entry, tier: 'low' as const }
-      }
-
-      if (score >= 0.72) {
-        return { ...entry, tier: 'high' as const }
-      }
-
-      if (score >= 0.35) {
-        return { ...entry, tier: 'mid' as const }
-      }
-
-      return { ...entry, tier: 'low' as const }
-    })
-  }, [localScoredReality, llmRealityScores, matchStatus])
+  const activeCardLabel = useMemo(() => {
+    if (!activeCardId) return ''
+    const card = realityCards.find((item) => item.id === activeCardId)
+    return card ? (isZh ? card.labelZh : card.label) : ''
+  }, [activeCardId, isZh])
 
   const resolveRealityConfig = useCallback((): ChatapConfig | null => {
     const env = import.meta.env as Record<string, string | undefined>
@@ -125,6 +171,10 @@ export const LanguageAreaScene = () => {
     const normalizedLabel = labelInput.trim()
     if (!normalizedLabel) {
       setLlmRealityScores({})
+      setCardStages({})
+      setCardReasons({})
+      setProcessedCount(0)
+      setActiveCardId('')
       setMatchStatus('idle')
       setMatchReason('')
       setLastMatchedLabel('')
@@ -134,46 +184,99 @@ export const LanguageAreaScene = () => {
     const requestId = activeRealityMatchReqRef.current + 1
     activeRealityMatchReqRef.current = requestId
     setMatchStatus('matching')
+    setProcessedCount(0)
+    setActiveCardId(realityCards[0]?.id || '')
+    setLlmRealityScores({})
+    setCardReasons({})
+    setLastMatchedLabel('')
+
+    const initialStages: Record<string, CardStage> = {}
+    realityCards.forEach((card) => {
+      initialStages[card.id] = 'pending'
+    })
+    setCardStages(initialStages)
 
     const config = resolveRealityConfig()
-    if (!config) {
-      if (activeRealityMatchReqRef.current !== requestId) return
-      setLlmRealityScores({})
-      setMatchStatus('fallback')
-      setMatchReason(isZh ? '匹配服务未配置，已回退到本地相似度。' : 'Matching service is unavailable; using local affinity fallback.')
-      setLastMatchedLabel(normalizedLabel)
-      return
-    }
 
-    const result = await requestRealityLabelMatch({
-      config,
-      label: normalizedLabel,
-      cards: realityCards,
-      isZh,
-    })
+    let fallbackCount = 0
+    for (let index = 0; index < realityCards.length; index += 1) {
+      const card = realityCards[index]!
+      if (activeRealityMatchReqRef.current !== requestId) return
+
+      setActiveCardId(card.id)
+      setCardStages((prev) => ({ ...prev, [card.id]: 'processing' }))
+
+      const localScore = scoreLabelAffinity(normalizedLabel, [card.label, card.labelZh, card.description, ...card.tags])
+      const fallbackTag = card.tags[0] || card.label
+
+      if (!config) {
+        const localReason = summarizeAssociationReason({
+          rawReason: '',
+          fallbackLabel: normalizedLabel,
+          fallbackTag,
+          isZh,
+        })
+
+        setLlmRealityScores((prev) => ({ ...prev, [card.id]: localScore }))
+        setCardReasons((prev) => ({ ...prev, [card.id]: localReason }))
+        setCardStages((prev) => ({ ...prev, [card.id]: 'fallback' }))
+        setProcessedCount(index + 1)
+        fallbackCount += 1
+        continue
+      }
+
+      const cardResult = await requestRealityCardMatch({
+        config,
+        label: normalizedLabel,
+        card,
+        isZh,
+      })
+
+      if (activeRealityMatchReqRef.current !== requestId) return
+
+      if (!cardResult) {
+        const localReason = summarizeAssociationReason({
+          rawReason: '',
+          fallbackLabel: normalizedLabel,
+          fallbackTag,
+          isZh,
+        })
+
+        setLlmRealityScores((prev) => ({ ...prev, [card.id]: localScore }))
+        setCardReasons((prev) => ({ ...prev, [card.id]: localReason }))
+        setCardStages((prev) => ({ ...prev, [card.id]: 'fallback' }))
+        setProcessedCount(index + 1)
+        fallbackCount += 1
+        continue
+      }
+
+      const aiReason = summarizeAssociationReason({
+        rawReason: cardResult.reason,
+        fallbackLabel: normalizedLabel,
+        fallbackTag,
+        isZh,
+      })
+
+      setLlmRealityScores((prev) => ({ ...prev, [card.id]: cardResult.score }))
+      setCardReasons((prev) => ({ ...prev, [card.id]: aiReason }))
+      setCardStages((prev) => ({ ...prev, [card.id]: 'done' }))
+      setProcessedCount(index + 1)
+    }
 
     if (activeRealityMatchReqRef.current !== requestId) return
 
-    if (!result) {
-      setLlmRealityScores({})
-      setMatchStatus('fallback')
-      setMatchReason(
-        isZh
-          ? 'OpenRouter 未返回有效分数，已使用本地相似度模型。'
-          : 'OpenRouter did not return valid scores; switched to local affinity model.',
-      )
-      setLastMatchedLabel(normalizedLabel)
-      return
-    }
-
-    setLlmRealityScores(result.scores)
-    setMatchStatus('llm')
+    setActiveCardId('')
+    setMatchStatus(fallbackCount > 0 ? 'fallback' : 'llm')
     setLastMatchedLabel(normalizedLabel)
     setMatchReason(
-      result.reason ||
+      fallbackCount > 0
+        ?
         (isZh
-          ? `OpenRouter(${result.model}) 已完成 25 张图片动态语义匹配。`
-          : `OpenRouter (${result.model}) completed dynamic semantic matching for all 25 images.`),
+          ? `已逐张完成 ${realityCards.length} 张图片匹配，其中 ${fallbackCount} 张使用本地语义兜底。`
+          : `Processed all ${realityCards.length} images sequentially; ${fallbackCount} cards used local semantic fallback.`)
+        : (isZh
+          ? `已逐张完成 ${realityCards.length} 张图片语义联想匹配。`
+          : `Processed all ${realityCards.length} images sequentially with language-association reasoning.`),
     )
   }, [isZh, labelInput, resolveRealityConfig])
 
@@ -219,7 +322,11 @@ export const LanguageAreaScene = () => {
                   setMatchStatus('idle')
                   setMatchReason('')
                   setLastMatchedLabel('')
+                  setProcessedCount(0)
+                  setActiveCardId('')
                   setLlmRealityScores({})
+                  setCardStages({})
+                  setCardReasons({})
                 }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
@@ -243,7 +350,11 @@ export const LanguageAreaScene = () => {
                       setMatchStatus('idle')
                       setMatchReason('')
                       setLastMatchedLabel('')
+                      setProcessedCount(0)
+                      setActiveCardId('')
                       setLlmRealityScores({})
+                      setCardStages({})
+                      setCardReasons({})
                     }}
                   >
                     {preset}
@@ -251,6 +362,14 @@ export const LanguageAreaScene = () => {
                 ))}
               </div>
             </div>
+
+            {matchStatus === 'matching' ? (
+              <p className="lang-match-note">
+                {isZh ? '匹配进度：' : 'Progress: '}
+                <b>{processedCount}/{realityCards.length}</b>
+                {activeCardLabel ? ` · ${isZh ? '当前：' : 'Current: '}${activeCardLabel}` : ''}
+              </p>
+            ) : null}
 
             {lastMatchedLabel ? (
               <p className="lang-match-note">
@@ -268,11 +387,7 @@ export const LanguageAreaScene = () => {
 
             {matchReason ? <p className="lang-note">{matchReason}</p> : null}
 
-            <div
-              className={`lang-reality-grid ${matchStatus === 'matching' ? 'is-matching' : ''}`}
-              role="list"
-              aria-label={isZh ? '语义重组对象网格' : 'Semantic reality grid'}
-            >
+            <div className="lang-reality-grid" role="list" aria-label={isZh ? '语义重组对象网格' : 'Semantic reality grid'}>
               {scoredReality.map((entry) => {
                 const hasBlackFill = entry.card.id === 'c06' || entry.card.id === 'c22'
                 return (
@@ -280,12 +395,18 @@ export const LanguageAreaScene = () => {
                     key={entry.card.id}
                     role="listitem"
                     className={`lang-reality-card is-${entry.tier} ${hasBlackFill ? 'has-black-fill' : ''}`}
+                    title={entry.reason || undefined}
                   >
                     <img src={entry.card.imageUrl} alt={isZh ? entry.card.labelZh : entry.card.label} loading="lazy" />
                     <div className="lang-reality-meta">
                       <small>{isZh ? entry.card.labelZh : entry.card.label}</small>
-                      <b>{Math.round(entry.score * 100)}%</b>
+                      <b>{entry.stage === 'done' || entry.stage === 'fallback' ? `${Math.round(entry.score * 100)}%` : '...'}</b>
                     </div>
+                    {(entry.stage === 'done' || entry.stage === 'fallback') && entry.reason ? (
+                      <div className="lang-reality-reason">
+                        <p>{entry.reason}</p>
+                      </div>
+                    ) : null}
                   </article>
                 )
               })}

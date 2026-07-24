@@ -294,6 +294,7 @@
   background: rgba(9, 15, 22, 0.78);
   min-height: 8.8rem;
   display: grid;
+  position: relative;
   overflow: hidden;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
 }
@@ -350,29 +351,18 @@
 .lang-reality-card.is-neutral img {
   filter: none;
 }
-
-.lang-reality-card.is-low {
-  opacity: 0.38;
-  filter: saturate(0.42) brightness(0.72);
-  transform: scale(0.95);
+.lang-reality-card.is-processing {
+  border-width: 2px;
+  border-color: rgba(133, 220, 245, 0.88);
+  box-shadow: 0 0 0 1px rgba(133, 220, 245, 0.22) inset, 0 0 16px rgba(92, 199, 241, 0.3);
+  animation: lang-matching-border 0.95s ease-in-out infinite alternate;
 }
 
-.lang-reality-card.is-low img {
-  filter: grayscale(0.62) brightness(0.75);
+.lang-reality-card.is-processing img {
+  filter: saturate(1.12) brightness(1.03);
 }
 
-.lang-reality-card.is-mid {
-  opacity: 0.92;
-  border-color: rgba(109, 212, 244, 0.95);
-  box-shadow: 0 0 0 1px rgba(109, 212, 244, 0.32) inset, 0 8px 16px rgba(0, 0, 0, 0.24);
-  transform: translateY(-2px) scale(1.02);
-}
-
-.lang-reality-card.is-mid img {
-  filter: saturate(1.25) contrast(1.08);
-}
-
-.lang-reality-card.is-high {
+.lang-reality-card.is-tier-100 {
   opacity: 1;
   border-color: rgba(255, 234, 146, 0.98);
   box-shadow:
@@ -383,27 +373,82 @@
   animation: lang-card-pulse 1.45s ease-in-out infinite alternate;
 }
 
-.lang-reality-card.is-high img {
-  filter: saturate(1.62) contrast(1.14) brightness(1.08);
+.lang-reality-card.is-tier-100 img {
+  filter: saturate(1.62) contrast(1.16) brightness(1.1);
 }
 
-.lang-reality-card.is-high .lang-reality-meta {
-  background: linear-gradient(180deg, rgba(50, 42, 18, 0.18), rgba(52, 42, 18, 0.42));
+.lang-reality-card.is-tier-80 {
+  opacity: 0.96;
+  border-color: rgba(226, 205, 133, 0.9);
+  box-shadow: 0 0 0 1px rgba(236, 214, 140, 0.26) inset, 0 8px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px) scale(1.02);
 }
 
-.lang-reality-card.is-high b {
-  color: rgba(255, 241, 188, 0.98);
+.lang-reality-card.is-tier-80 img {
+  filter: saturate(1.32) contrast(1.09);
 }
 
-.lang-reality-grid.is-matching .lang-reality-card {
-  border-width: 2px;
-  border-color: rgba(133, 220, 245, 0.88);
-  box-shadow: 0 0 0 1px rgba(133, 220, 245, 0.22) inset, 0 0 16px rgba(92, 199, 241, 0.3);
-  animation: lang-matching-border 0.95s ease-in-out infinite alternate;
+.lang-reality-card.is-tier-60 {
+  opacity: 0.8;
+  border-color: rgba(122, 195, 218, 0.78);
+  box-shadow: 0 0 0 1px rgba(122, 195, 218, 0.2) inset;
 }
 
-.lang-reality-grid.is-matching .lang-reality-card img {
-  filter: saturate(1.12) brightness(1.03);
+.lang-reality-card.is-tier-60 img {
+  filter: saturate(1.06) brightness(0.98);
+}
+
+.lang-reality-card.is-tier-40 {
+  opacity: 0.62;
+  border-color: rgba(95, 145, 162, 0.62);
+}
+
+.lang-reality-card.is-tier-40 img {
+  filter: saturate(0.86) brightness(0.86);
+}
+
+.lang-reality-card.is-tier-20 {
+  opacity: 0.48;
+  border-color: rgba(82, 122, 136, 0.52);
+}
+
+.lang-reality-card.is-tier-20 img {
+  filter: saturate(0.7) grayscale(0.28) brightness(0.74);
+}
+
+.lang-reality-card.is-tier-0 {
+  opacity: 0.34;
+  border-color: rgba(70, 104, 116, 0.44);
+}
+
+.lang-reality-card.is-tier-0 img {
+  filter: saturate(0.42) grayscale(0.62) brightness(0.62);
+}
+
+.lang-reality-reason {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.34rem 0.36rem;
+  background: linear-gradient(180deg, rgba(6, 11, 17, 0.15), rgba(6, 11, 17, 0.94));
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  pointer-events: none;
+}
+
+.lang-reality-card:hover .lang-reality-reason {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lang-reality-reason p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  line-height: 1.35;
+  color: rgba(230, 241, 247, 0.96);
 }
 
 @keyframes lang-card-pulse {
