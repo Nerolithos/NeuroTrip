@@ -77,7 +77,7 @@ export const VisionKnowledgeGraph = ({ isZh }: VisionKnowledgeGraphProps) => {
         title={isZh ? '视觉知识图谱' : 'Visual knowledge graph'}
         srcDoc={srcDoc}
         loading="eager"
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
         referrerPolicy="no-referrer"
       />
     </div>

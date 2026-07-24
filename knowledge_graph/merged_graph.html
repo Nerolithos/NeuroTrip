@@ -346,16 +346,24 @@ document.getElementById("foot").innerHTML=
   `<span class="lg"><span class="mono" style="color:#c2472f">▲</span>/<span class="mono" style="color:#2f7dc2">▼</span>效应方向</span>`+
   `<span class="spacer" style="flex:1"></span><span>滚轮缩放 · 拖背景平移 · 双击复位 · 数据来源 PubMed 摘要抽取</span>`;
 
-document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")
-  ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
-  document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");};
+const themeBtn=document.getElementById("themeBtn");
+if(themeBtn){
+  themeBtn.onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")
+    ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+    document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");};
+}
 const layoutBtn=document.getElementById("layoutBtn");
-if(!HAS_COORD){layoutBtn.disabled=true;layoutBtn.title="无可用脑区坐标";layoutBtn.style.opacity=.4;}
-layoutBtn.onclick=()=>setLayout(layoutMode==="force"?"anatomy":"force");
+if(layoutBtn){
+  if(!HAS_COORD){layoutBtn.disabled=true;layoutBtn.title="无可用脑区坐标";layoutBtn.style.opacity=.4;}
+  layoutBtn.onclick=()=>setLayout(layoutMode==="force"?"anatomy":"force");
+}
 function zoomCenter(f){const r=svg.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,f);}
-document.getElementById("zoomInBtn").onclick=()=>zoomCenter(1.3);
-document.getElementById("zoomOutBtn").onclick=()=>zoomCenter(1/1.3);
-document.getElementById("resetBtn").onclick=resetView;
+const zoomInBtn=document.getElementById("zoomInBtn");
+if(zoomInBtn)zoomInBtn.onclick=()=>zoomCenter(1.3);
+const zoomOutBtn=document.getElementById("zoomOutBtn");
+if(zoomOutBtn)zoomOutBtn.onclick=()=>zoomCenter(1/1.3);
+const resetBtn=document.getElementById("resetBtn");
+if(resetBtn)resetBtn.onclick=resetView;
 
 function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:1000;H=r.height>50?r.height:650;
   svg.setAttribute("viewBox",`0 0 ${W} ${H}`);}

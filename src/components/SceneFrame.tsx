@@ -70,7 +70,7 @@ export const SceneFrame = ({
           {isZh ? '返回' : 'Back'}
         </button>
         <p className="scene-status">
-          {isZh ? 'NeuroTrip // 意识的万花筒' : 'NeuroTrip // Consciousness as Kaleidoscope'}
+          NeuroTrip
         </p>
         <div className="scene-links">
           <Link className="ghost-link" to="/map">

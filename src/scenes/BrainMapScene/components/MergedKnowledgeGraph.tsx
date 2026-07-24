@@ -70,7 +70,7 @@ export const MergedKnowledgeGraph = ({ isZh }: MergedKnowledgeGraphProps) => {
       title={isZh ? '脑网络总图谱' : 'Merged neural knowledge graph'}
       srcDoc={srcDoc}
       loading="lazy"
-      sandbox="allow-scripts allow-same-origin"
+      sandbox="allow-scripts"
       referrerPolicy="no-referrer"
     />
   )

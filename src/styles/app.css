@@ -587,6 +587,38 @@ input:focus-visible {
   color: var(--ink-soft);
 }
 
+.hippo-observe-focus {
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 0.3rem 0;
+}
+
+.hippo-source-name-focus {
+  width: min(1080px, 96%);
+  justify-self: center;
+}
+
+.hippo-observe-focus-frame {
+  position: relative;
+  width: min(1080px, 96%);
+  height: clamp(420px, 56vh, 740px);
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(246, 244, 218, 0.32);
+  background: rgba(8, 12, 19, 0.92);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.46);
+}
+
+.hippo-observe-focus-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .hippo-observe-frame {
   position: relative;
   border-radius: 0.8rem;
@@ -842,6 +874,15 @@ input:focus-visible {
   .hippo-rebuild-layout {
     grid-template-rows: auto clamp(588px, 70svh, 896px);
     min-height: clamp(1372px, 136svh, 1848px);
+  }
+
+  .hippo-observe-focus-frame {
+    width: 100%;
+    height: clamp(360px, 52vh, 560px);
+  }
+
+  .hippo-source-name-focus {
+    width: 100%;
   }
 }
 

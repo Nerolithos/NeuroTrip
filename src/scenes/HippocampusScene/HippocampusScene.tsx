@@ -3,10 +3,10 @@ import { SceneFrame } from '../../components/SceneFrame'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
 import rawMemoryGraphHtml from '../../../knowledge_graph/memory_graph.html?raw'
-import initMemoryMaleHackathon from '../../../InitMemory/“男性”黑客松选手.png'
-import initMemoryPerfumePoster from '../../../InitMemory/香水海报.png'
-import initMemoryOilPainting from '../../../InitMemory/《生与活》油画.png'
-import initMemoryLakeView from '../../../InitMemory/湖畔风光.png'
+import initMemoryMaleHackathon from '../../assets/init-memory/male-hackathon.webp'
+import initMemoryPerfumePoster from '../../assets/init-memory/perfume-poster.webp'
+import initMemoryOilPainting from '../../assets/init-memory/oil-painting.webp'
+import initMemoryLakeView from '../../assets/init-memory/lakeside-view.webp'
 import { resolveChatapConfig, type ChatapConfig } from '../FacePipelineScene/emojiMatcher'
 
 const OBSERVE_DURATION_MS = 12_000
@@ -25,10 +25,25 @@ type InitMemoryCard = {
   fileName: string
 }
 
+type ReconstructFailure = {
+  ok: false
+  status?: number
+  detail?: string
+  endpoint?: string
+}
+
+type ReconstructSuccess = {
+  ok: true
+  imageUrl: string
+  model: string
+}
+
+type ReconstructResult = ReconstructFailure | ReconstructSuccess
+
 const DEFAULT_MEMORY_CARD: InitMemoryCard = {
   id: 'male-hackathon',
   src: initMemoryMaleHackathon,
-  fileName: '“男性”黑客松选手.png',
+  fileName: '“男性”黑客松选手',
 }
 
 const INIT_MEMORY_CARDS: InitMemoryCard[] = [
@@ -36,17 +51,17 @@ const INIT_MEMORY_CARDS: InitMemoryCard[] = [
   {
     id: 'perfume-poster',
     src: initMemoryPerfumePoster,
-    fileName: '香水海报.png',
+    fileName: '香水海报',
   },
   {
     id: 'oil-painting',
     src: initMemoryOilPainting,
-    fileName: '《生与活》油画.png',
+    fileName: '《生与活》油画',
   },
   {
     id: 'lakeside-view',
     src: initMemoryLakeView,
-    fileName: '湖畔风光.png',
+    fileName: '湖畔风光',
   },
 ]
 
@@ -204,6 +219,56 @@ const parseImageResult = (payload: unknown): string | null => {
   return null
 }
 
+const compactErrorDetail = (raw: string): string => {
+  const text = raw.trim()
+  if (!text) return ''
+
+  const parsed = parseJsonFromText(text)
+  const parsedError = parsed?.error
+  if (typeof parsedError === 'string' && parsedError.trim()) return parsedError.trim()
+  if (parsedError && typeof parsedError === 'object') {
+    const message = (parsedError as { message?: unknown }).message
+    if (typeof message === 'string' && message.trim()) return message.trim()
+  }
+
+  if (text.length <= 180) return text
+  return `${text.slice(0, 177)}...`
+}
+
+const buildReconstructErrorMessage = (isZh: boolean, failure: ReconstructFailure): string => {
+  const status = failure.status
+  const endpoint = failure.endpoint || '/api/openrouter'
+  const detail = failure.detail || ''
+
+  if (status === 404) {
+    return isZh
+      ? `做图接口 404：${endpoint} 不可用。请确认线上部署包含 Functions（/api/openrouter）或配置 VITE_CHATAP 直连 OpenRouter。`
+      : `Image endpoint 404: ${endpoint} is missing. Deploy /api/openrouter functions or set VITE_CHATAP for direct OpenRouter mode.`
+  }
+
+  if (status === 403) {
+    return isZh
+      ? `做图接口 403：OpenRouter 鉴权被拒绝。请检查 API key、域名白名单与代理密钥配置。${detail ? ` 详情：${detail}` : ''}`
+      : `Image endpoint 403: OpenRouter authorization was rejected. Check API key, domain allowlist, and proxy secret.${detail ? ` Detail: ${detail}` : ''}`
+  }
+
+  if (status === 400) {
+    return isZh
+      ? `做图接口 400：请求参数或模型不可用。请更换模型或检查代理参数。${detail ? ` 详情：${detail}` : ''}`
+      : `Image endpoint 400: request payload or model is invalid. Try another model or inspect proxy payload.${detail ? ` Detail: ${detail}` : ''}`
+  }
+
+  if (status === 0) {
+    return isZh
+      ? `做图请求超时或网络中断。请稍后重试。${detail ? ` 详情：${detail}` : ''}`
+      : `Image request timed out or network failed. Please retry.${detail ? ` Detail: ${detail}` : ''}`
+  }
+
+  return isZh
+    ? `做图失败（${status ?? 'unknown'}）。${detail ? `详情：${detail}` : '请检查网络、模型可用性与 /api/openrouter 配置。'}`
+    : `Image generation failed (${status ?? 'unknown'}). ${detail || 'Check network, model availability, and /api/openrouter configuration.'}`
+}
+
 const buildMemoryGraphSrcDoc = (isZh: boolean) => {
   const styleOverride = `
 <style id="memory-graph-shell-override">
@@ -303,9 +368,10 @@ const requestReconstructedImage = async (input: {
   prompt: string
   signal: AbortSignal
   isZh: boolean
-}): Promise<{ imageUrl: string; model: string } | null> => {
+}): Promise<ReconstructResult> => {
   const { config, models, prompt, signal, isZh } = input
   const headers = buildOpenRouterHeaders(config)
+  let lastFailure: ReconstructFailure = { ok: false }
 
   for (let index = 0; index < models.length; index += 1) {
     const model = (models[index] || '').trim()
@@ -346,10 +412,26 @@ const requestReconstructedImage = async (input: {
         const imagePayload = await imageResponse.json()
         const imageUrl = parseImageResult(imagePayload)
         if (imageUrl) {
-          return { imageUrl, model }
+          return { ok: true, imageUrl, model }
+        }
+      } else {
+        const text = await imageResponse.text()
+        lastFailure = {
+          ok: false,
+          status: imageResponse.status,
+          detail: compactErrorDetail(text),
+          endpoint: imageEndpoint,
         }
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        lastFailure = {
+          ok: false,
+          status: 0,
+          detail: 'Request timeout',
+          endpoint: imageEndpoint,
+        }
+      }
       // continue to chat fallback for the same model.
     }
 
@@ -381,20 +463,35 @@ const requestReconstructedImage = async (input: {
       })
 
       if (!chatResponse.ok) {
+        const text = await chatResponse.text()
+        lastFailure = {
+          ok: false,
+          status: chatResponse.status,
+          detail: compactErrorDetail(text),
+          endpoint: config.endpoint,
+        }
         continue
       }
 
       const chatPayload = await chatResponse.json()
       const fallbackImageUrl = parseImageResult(chatPayload)
       if (fallbackImageUrl) {
-        return { imageUrl: fallbackImageUrl, model }
+        return { ok: true, imageUrl: fallbackImageUrl, model }
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        lastFailure = {
+          ok: false,
+          status: 0,
+          detail: 'Request timeout',
+          endpoint: config.endpoint,
+        }
+      }
       // try next model
     }
   }
 
-  return null
+  return lastFailure
 }
 
 type Stage = 'ready' | 'observe' | 'round-1' | 'round-2' | 'complete'
@@ -546,12 +643,8 @@ export const HippocampusScene = () => {
         isZh,
       })
 
-      if (!result) {
-        setErrorMessage(
-          isZh
-            ? '第一轮重建失败。请换一种描述再试，或稍后重试。'
-            : 'Round 1 reconstruction failed. Try a different description and retry.',
-        )
+      if (!result.ok) {
+        setErrorMessage(buildReconstructErrorMessage(isZh, result))
         return
       }
 
@@ -596,12 +689,8 @@ export const HippocampusScene = () => {
         isZh,
       })
 
-      if (!result) {
-        setErrorMessage(
-          isZh
-            ? '第二轮重建失败。请补充偏移细节后再试。'
-            : 'Round 2 reconstruction failed. Add drift details and retry.',
-        )
+      if (!result.ok) {
+        setErrorMessage(buildReconstructErrorMessage(isZh, result))
         return
       }
 
@@ -646,7 +735,7 @@ export const HippocampusScene = () => {
 
   return (
     <SceneFrame
-      title={isZh ? '海马体' : 'Hippocampus'}
+      title={isZh ? '记忆、回忆与遗忘' : 'Memory, Recall, and Forgetting'}
       subtitle={
         isZh
           ? '记忆会在回忆中重写。先看 12 秒，再用语言重建，并让误差逐轮累积。'
@@ -671,116 +760,124 @@ export const HippocampusScene = () => {
             </p>
           </div>
 
-          <div className="hippo-stage-grid">
-            <article className="hippo-card hippo-card-primary">
-              <h3>{isZh ? '原始记忆' : 'Original Memory'}</h3>
-              <p className="hippo-source-name">
+          {stage === 'observe' ? (
+            <section className="hippo-observe-focus" aria-label={isZh ? '12秒观察窗口' : '12-second observation window'}>
+              <p className="hippo-source-name hippo-source-name-focus">
                 {isZh ? '当前图片：' : 'Current source: '}
                 {currentMemoryCard.fileName}
               </p>
-              <div className="hippo-source-actions">
-                <button type="button" className="ghost-button" onClick={retryCurrentImage} disabled={isGenerating}>
-                  {isZh ? '重试当前图' : 'Retry current image'}
-                </button>
-                <button type="button" className="ghost-button" onClick={skipToNextImage} disabled={isGenerating}>
-                  {isZh ? '跳过换一张' : 'Skip to next image'}
-                </button>
+              <div className="hippo-observe-focus-frame">
+                <img src={currentMemoryCard.src} alt={isZh ? `原始记忆图像 ${currentMemoryCard.fileName}` : `Original memory image ${currentMemoryCard.fileName}`} />
+                <span className="hippo-countdown">{isZh ? `剩余 ${secondsLeft}s` : `${secondsLeft}s left`}</span>
               </div>
-              {stage === 'ready' ? (
-                <div className="hippo-callout">
-                  <p>
-                    {isZh
-                      ? '点击下方按钮后，你将只看到原图 12 秒。时间结束后，图像会自动消失。'
-                      : 'After starting, you only get 12 seconds to view the source image. It disappears automatically.'}
-                  </p>
-                  <button type="button" className="trip-button" onClick={startObservation}>
-                    {isZh ? '开始 12 秒观察' : 'Start 12-second viewing'}
+            </section>
+          ) : (
+            <div className="hippo-stage-grid">
+              <article className="hippo-card hippo-card-primary">
+                <h3>{isZh ? '原始记忆' : 'Original Memory'}</h3>
+                <p className="hippo-source-name">
+                  {isZh ? '当前图片：' : 'Current source: '}
+                  {currentMemoryCard.fileName}
+                </p>
+                <div className="hippo-source-actions">
+                  <button type="button" className="ghost-button" onClick={retryCurrentImage} disabled={isGenerating}>
+                    {isZh ? '重试当前图' : 'Retry current image'}
+                  </button>
+                  <button type="button" className="ghost-button" onClick={skipToNextImage} disabled={isGenerating}>
+                    {isZh ? '跳过换一张' : 'Skip to next image'}
                   </button>
                 </div>
-              ) : stage === 'observe' ? (
-                <div className="hippo-observe-frame">
-                  <img src={currentMemoryCard.src} alt={isZh ? `原始记忆图像 ${currentMemoryCard.fileName}` : `Original memory image ${currentMemoryCard.fileName}`} />
-                  <span className="hippo-countdown">{isZh ? `剩余 ${secondsLeft}s` : `${secondsLeft}s left`}</span>
-                </div>
-              ) : (
-                <div className="hippo-hidden-memory">
-                  <p>{isZh ? '图像已消失，请凭记忆描述。' : 'Image removed. Describe from memory.'}</p>
-                </div>
-              )}
-            </article>
+                {stage === 'ready' ? (
+                  <div className="hippo-callout">
+                    <p>
+                      {isZh
+                        ? '点击下方按钮后，你将只看到原图 12 秒。时间结束后，图像会自动消失。'
+                        : 'After starting, you only get 12 seconds to view the source image. It disappears automatically.'}
+                    </p>
+                    <button type="button" className="trip-button" onClick={startObservation}>
+                      {isZh ? '开始 12 秒观察' : 'Start 12-second viewing'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="hippo-hidden-memory">
+                    <p>{isZh ? '图像已消失，请凭记忆描述。' : 'Image removed. Describe from memory.'}</p>
+                  </div>
+                )}
+              </article>
 
-            <article className="hippo-card">
-              <h3>{isZh ? '重建控制台' : 'Reconstruction Console'}</h3>
+              <article className="hippo-card">
+                <h3>{isZh ? '重建控制台' : 'Reconstruction Console'}</h3>
 
-              {stage === 'round-1' ? (
-                <div className="hippo-form-block">
-                  <label htmlFor="hippo-round-one">
-                    {isZh ? '第一轮：描述你记得的画面' : 'Round 1: Describe what you remember'}
-                  </label>
-                  <textarea
-                    id="hippo-round-one"
-                    value={roundOneDescription}
-                    onChange={(event) => setRoundOneDescription(event.target.value)}
-                    placeholder={
-                      isZh
-                        ? '例如：黄昏街角，一辆旧巴士停在湿润路面旁，远处窗灯偏暖。'
-                        : 'Example: A dusk street corner, an old bus by wet pavement, warm windows in the distance.'
-                    }
-                    disabled={isGenerating}
-                  />
-                  <button type="button" className="ghost-button" onClick={generateRoundOne} disabled={!canGenerateRoundOne}>
-                    {isGenerating && stage === 'round-1'
-                      ? isZh
-                        ? '第一轮生成中...'
-                        : 'Generating round 1...'
-                      : isZh
-                        ? 'OpenRouter 第一轮重建'
-                        : 'OpenRouter round 1'}
-                  </button>
-                </div>
-              ) : null}
+                {stage === 'round-1' ? (
+                  <div className="hippo-form-block">
+                    <label htmlFor="hippo-round-one">
+                      {isZh ? '第一轮：描述你记得的画面' : 'Round 1: Describe what you remember'}
+                    </label>
+                    <textarea
+                      id="hippo-round-one"
+                      value={roundOneDescription}
+                      onChange={(event) => setRoundOneDescription(event.target.value)}
+                      placeholder={
+                        isZh
+                          ? '例如：黄昏街角，一辆旧巴士停在湿润路面旁，远处窗灯偏暖。'
+                          : 'Example: A dusk street corner, an old bus by wet pavement, warm windows in the distance.'
+                      }
+                      disabled={isGenerating}
+                    />
+                    <button type="button" className="ghost-button" onClick={generateRoundOne} disabled={!canGenerateRoundOne}>
+                      {isGenerating && stage === 'round-1'
+                        ? isZh
+                          ? '第一轮生成中...'
+                          : 'Generating round 1...'
+                        : isZh
+                          ? 'OpenRouter 第一轮重建'
+                          : 'OpenRouter round 1'}
+                    </button>
+                  </div>
+                ) : null}
 
-              {roundOneImage ? (
-                <div className="hippo-generated-block">
-                  <p className="hippo-generated-title">{isZh ? '第一轮结果' : 'Round-1 result'}</p>
-                  <img src={roundOneImage} alt={isZh ? '第一轮重建图' : 'Round-1 reconstructed image'} />
-                  <p className="prototype-note">Model: {roundOneModel}</p>
-                </div>
-              ) : null}
+                {roundOneImage ? (
+                  <div className="hippo-generated-block">
+                    <p className="hippo-generated-title">{isZh ? '第一轮结果' : 'Round-1 result'}</p>
+                    <img src={roundOneImage} alt={isZh ? '第一轮重建图' : 'Round-1 reconstructed image'} />
+                    <p className="prototype-note">Model: {roundOneModel}</p>
+                  </div>
+                ) : null}
 
-              {stage === 'round-2' ? (
-                <div className="hippo-form-block">
-                  <label htmlFor="hippo-round-two">
-                    {isZh
-                      ? '第二轮：描述偏移或误差（缺失、替换、错位）'
-                      : 'Round 2: Describe drift (missing/swapped/misaligned details)'}
-                  </label>
-                  <textarea
-                    id="hippo-round-two"
-                    value={roundTwoDescription}
-                    onChange={(event) => setRoundTwoDescription(event.target.value)}
-                    placeholder={
-                      isZh
-                        ? '例如：巴士颜色被记成蓝色，路牌文字模糊，窗户数量变少。'
-                        : 'Example: bus color shifts to blue, road sign text blurs, fewer windows remain.'
-                    }
-                    disabled={isGenerating}
-                  />
-                  <button type="button" className="ghost-button" onClick={generateRoundTwo} disabled={!canGenerateRoundTwo}>
-                    {isGenerating && stage === 'round-2'
-                      ? isZh
-                        ? '第二轮生成中...'
-                        : 'Generating round 2...'
-                      : isZh
-                        ? 'OpenRouter 第二轮重建'
-                        : 'OpenRouter round 2'}
-                  </button>
-                </div>
-              ) : null}
+                {stage === 'round-2' ? (
+                  <div className="hippo-form-block">
+                    <label htmlFor="hippo-round-two">
+                      {isZh
+                        ? '第二轮：描述偏移或误差（缺失、替换、错位）'
+                        : 'Round 2: Describe drift (missing/swapped/misaligned details)'}
+                    </label>
+                    <textarea
+                      id="hippo-round-two"
+                      value={roundTwoDescription}
+                      onChange={(event) => setRoundTwoDescription(event.target.value)}
+                      placeholder={
+                        isZh
+                          ? '例如：巴士颜色被记成蓝色，路牌文字模糊，窗户数量变少。'
+                          : 'Example: bus color shifts to blue, road sign text blurs, fewer windows remain.'
+                      }
+                      disabled={isGenerating}
+                    />
+                    <button type="button" className="ghost-button" onClick={generateRoundTwo} disabled={!canGenerateRoundTwo}>
+                      {isGenerating && stage === 'round-2'
+                        ? isZh
+                          ? '第二轮生成中...'
+                          : 'Generating round 2...'
+                        : isZh
+                          ? 'OpenRouter 第二轮重建'
+                          : 'OpenRouter round 2'}
+                    </button>
+                  </div>
+                ) : null}
 
-              {errorMessage ? <p className="warning-note">{errorMessage}</p> : null}
-            </article>
-          </div>
+                {errorMessage ? <p className="warning-note">{errorMessage}</p> : null}
+              </article>
+            </div>
+          )}
 
           {stage === 'complete' && roundTwoImage ? (
             <section className="hippo-final-compare" aria-label={isZh ? '原图与最终重建对照' : 'Original vs final comparison'}>
@@ -806,7 +903,7 @@ export const HippocampusScene = () => {
             title={isZh ? '记忆功能连接图谱' : 'Memory connectome graph'}
             srcDoc={graphSrcDoc}
             loading="eager"
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts"
             referrerPolicy="no-referrer"
           />
         </section>

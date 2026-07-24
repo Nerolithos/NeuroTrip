@@ -77,7 +77,7 @@ export const LanguageKnowledgeGraph = ({ isZh }: LanguageKnowledgeGraphProps) =>
         title={isZh ? '语言功能知识图谱' : 'Language function graph'}
         srcDoc={srcDoc}
         loading="eager"
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts"
         referrerPolicy="no-referrer"
       />
     </div>
