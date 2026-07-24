@@ -3,20 +3,20 @@ import { SceneFrame } from '../../components/SceneFrame'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
 import rawMemoryGraphHtml from '../../../knowledge_graph/memory_graph.html?raw'
-import initMemoryMaleHackathon from '../../assets/init-memory/male-hackathon.webp'
-import initMemoryPerfumePoster from '../../assets/init-memory/perfume-poster.webp'
-import initMemoryOilPainting from '../../assets/init-memory/oil-painting.webp'
-import initMemoryLakeView from '../../assets/init-memory/lakeside-view.webp'
+import initMemoryMaleHackathon from '../../assets/init-memory/male-hackathon.png'
+import initMemoryPerfumePoster from '../../assets/init-memory/perfume-poster.png'
+import initMemoryOilPainting from '../../assets/init-memory/oil-painting.png'
+import initMemoryLakeView from '../../assets/init-memory/lakeside-view.png'
 import { buildProxyEndpointCandidates, resolveChatapConfig, type ChatapConfig } from '../FacePipelineScene/emojiMatcher'
 
 const OBSERVE_DURATION_MS = 12_000
 
 const IMAGE_MODEL_CANDIDATES = [
+  'bytedance-seed/seedream-4.5',
   'openai/gpt-image-1',
   'google/gemini-2.5-flash-image-preview',
   'black-forest-labs/flux-1.1-pro',
   'black-forest-labs/flux-1-schnell',
-  'stabilityai/stable-diffusion-3.5-large',
 ]
 
 type InitMemoryCard = {
