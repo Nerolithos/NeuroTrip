@@ -452,7 +452,7 @@ const requestReconstructedImage = async (input: {
               provider: arkOnly ? 'ark' : undefined,
               model,
               prompt,
-              size: '1024x1024',
+              size: arkOnly ? '2048x2048' : '1024x1024',
               n: 1,
               response_format: arkOnly ? 'url' : 'b64_json',
               siteUrl: config.siteUrl,

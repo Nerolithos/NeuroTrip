@@ -56,6 +56,40 @@ const normalizeImageModel = (model: string) => {
   return normalized
 }
 
+const ARK_MIN_IMAGE_PIXELS = 3_686_400
+const DEFAULT_ARK_IMAGE_SIZE = '2048x2048'
+
+const parseImageSize = (value: string) => {
+  const match = value.trim().match(/^(\d+)\s*x\s*(\d+)$/i)
+  if (!match) return null
+
+  const width = Number.parseInt(match[1], 10)
+  const height = Number.parseInt(match[2], 10)
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null
+  }
+
+  return { width, height }
+}
+
+const normalizeImageSize = (value: string | undefined, provider: 'ark' | 'openrouter') => {
+  const normalized = (value || '').trim()
+  if (!normalized) {
+    return provider === 'ark' ? DEFAULT_ARK_IMAGE_SIZE : '1024x1024'
+  }
+
+  if (provider !== 'ark') return normalized
+
+  const parsed = parseImageSize(normalized)
+  if (!parsed) return DEFAULT_ARK_IMAGE_SIZE
+
+  if (parsed.width * parsed.height < ARK_MIN_IMAGE_PIXELS) {
+    return DEFAULT_ARK_IMAGE_SIZE
+  }
+
+  return `${parsed.width}x${parsed.height}`
+}
+
 const isArkModel = (model: string) => {
   return model.startsWith('doubao-') || model.startsWith('seedream-')
 }
@@ -145,7 +179,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       ? {
           model,
           prompt,
-          size: typeof payload?.size === 'string' && payload.size.trim() ? payload.size : '1024x1024',
+          size: normalizeImageSize(typeof payload?.size === 'string' ? payload.size : undefined, provider),
           n: typeof payload?.n === 'number' ? payload.n : 1,
           response_format: responseFormat,
         }

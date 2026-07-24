@@ -22,4 +22,5 @@ test('Hippocampus image candidate list excludes known invalid stability model id
   assert.equal(content.includes("'doubao-seedream-4-5-251128'"), true)
   assert.equal(content.includes('stabilityai/stable-diffusion-3.5-large'), false)
   assert.equal(content.includes("provider: arkOnly ? 'ark' : undefined"), true)
+  assert.equal(content.includes("size: arkOnly ? '2048x2048' : '1024x1024'"), true)
 })
