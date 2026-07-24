@@ -222,31 +222,6 @@ function fitView(padT,padX,padB){
   for(const n of N){n.x=n.x*s+ox;n.y=n.y*s+oy;}
 }
 
-function keepNodesInViewport(pad){
-  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-  for(const n of N){
-    if(!Number.isFinite(n.x)||!Number.isFinite(n.y))continue;
-    x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);
-  }
-  if(x0===1e9||y0===1e9||x1===-1e9||y1===-1e9)return;
-
-  const innerW=Math.max(1,W-pad*2),innerH=Math.max(1,H-pad*2);
-  const gw=Math.max(1,x1-x0),gh=Math.max(1,y1-y0);
-  const shrink=Math.min(1,innerW/gw,innerH/gh);
-  const cx=(x0+x1)/2,cy=(y0+y1)/2;
-
-  for(const n of N){
-    n.x=(n.x-cx)*shrink+W/2;
-    n.y=(n.y-cy)*shrink+H/2;
-  }
-
-  x0=1e9;y0=1e9;x1=-1e9;y1=-1e9;
-  for(const n of N){x0=Math.min(x0,n.x);x1=Math.max(x1,n.x);y0=Math.min(y0,n.y);y1=Math.max(y1,n.y);}
-  let dx=0,dy=0;
-  if(x0<pad)dx=pad-x0;else if(x1>W-pad)dx=(W-pad)-x1;
-  if(y0<pad)dy=pad-y0;else if(y1>H-pad)dy=(H-pad)-y1;
-  if(dx||dy)for(const n of N){n.x+=dx;n.y+=dy;}
-}
 
 function render(){
   links.forEach((l,i)=>{const on=active.has(l.evidence_type),rel=selected&&(l.s===selected||l.t===selected);
@@ -344,57 +319,11 @@ document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElem
   document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");};
 
 let anim=null;
-let layoutReady=false;
-let stablePasses=0;
-const MIN_LAYOUT_W=360;
-const MIN_LAYOUT_H=260;
-
-function resize(){
-  const r=svg.getBoundingClientRect();
-  W=r.width>50?r.width:900;
-  H=r.height>50?r.height:600;
-  resetZoom();
-}
-
-function seedNodes(){
-  N.forEach((n,i)=>{const a=i/N.length*6.28;
-    n.x=W/2+Math.cos(a)*Math.min(W,H)*0.39;
-    n.y=H/2+Math.sin(a)*Math.min(W,H)*0.34;
-    n.vx=0;n.vy=0;n.fx=null;n.fy=null;
-  });
-}
-
-function runLayout(){
-  seedNodes();
-  simulate(720);
-  fitView(68,66,44);
-  keepNodesInViewport(26);
-  render();
-  layoutReady=true;
-}
-
-function initWhenStable(){
-  resize();
-  if(W<MIN_LAYOUT_W||H<MIN_LAYOUT_H){requestAnimationFrame(initWhenStable);return;}
-  stablePasses+=1;
-  if(stablePasses<2){requestAnimationFrame(initWhenStable);return;}
-  runLayout();
-}
-
-addEventListener("resize",()=>{
-  const oW=W,oH=H;
-  resize();
-  if(!layoutReady)return;
-
-  const sx=oW>1?W/oW:1;
-  const sy=oH>1?H/oH:1;
-  const majorResize=sx>1.2||sx<0.84||sy>1.2||sy<0.84;
-  if(majorResize){runLayout();return;}
-
-  if(oW>50&&oH>50)N.forEach(n=>{n.x*=sx;n.y*=sy;});
-  keepNodesInViewport(26);
-  render();
-});
-
-requestAnimationFrame(()=>requestAnimationFrame(initWhenStable));
+function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:900;H=r.height>50?r.height:600;
+  resetZoom();}
+function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
+  n.x=W/2+Math.cos(a)*Math.min(W,H)*0.39;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.34;});
+  simulate(720);fitView(68,66,44);render();}
+addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
+requestAnimationFrame(()=>requestAnimationFrame(init));
 </script>
