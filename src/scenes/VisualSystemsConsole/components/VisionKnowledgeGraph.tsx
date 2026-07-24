@@ -76,7 +76,7 @@ export const VisionKnowledgeGraph = ({ isZh }: VisionKnowledgeGraphProps) => {
         className="vsc-knowledge-frame"
         title={isZh ? '视觉知识图谱' : 'Visual knowledge graph'}
         srcDoc={srcDoc}
-        loading="lazy"
+        loading="eager"
         sandbox="allow-scripts allow-same-origin"
         referrerPolicy="no-referrer"
       />

@@ -318,11 +318,55 @@ document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElem
   document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");};
 
 let anim=null;
-function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:900;H=r.height>50?r.height:600;
-  resetZoom();}
-function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
-  n.x=W/2+Math.cos(a)*Math.min(W,H)*0.39;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.34;});
-  simulate(720);fitView(68,66,44);render();}
-addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
-requestAnimationFrame(()=>requestAnimationFrame(init));
+let layoutReady=false;
+let stablePasses=0;
+const MIN_LAYOUT_W=360;
+const MIN_LAYOUT_H=260;
+
+function resize(){
+  const r=svg.getBoundingClientRect();
+  W=r.width>50?r.width:900;
+  H=r.height>50?r.height:600;
+  resetZoom();
+}
+
+function seedNodes(){
+  N.forEach((n,i)=>{const a=i/N.length*6.28;
+    n.x=W/2+Math.cos(a)*Math.min(W,H)*0.39;
+    n.y=H/2+Math.sin(a)*Math.min(W,H)*0.34;
+    n.vx=0;n.vy=0;n.fx=null;n.fy=null;
+  });
+}
+
+function runLayout(){
+  seedNodes();
+  simulate(720);
+  fitView(68,66,44);
+  render();
+  layoutReady=true;
+}
+
+function initWhenStable(){
+  resize();
+  if(W<MIN_LAYOUT_W||H<MIN_LAYOUT_H){requestAnimationFrame(initWhenStable);return;}
+  stablePasses+=1;
+  if(stablePasses<2){requestAnimationFrame(initWhenStable);return;}
+  runLayout();
+}
+
+addEventListener("resize",()=>{
+  const oW=W,oH=H;
+  resize();
+  if(!layoutReady)return;
+
+  const sx=oW>1?W/oW:1;
+  const sy=oH>1?H/oH:1;
+  const majorResize=sx>1.2||sx<0.84||sy>1.2||sy<0.84;
+  if(majorResize){runLayout();return;}
+
+  if(oW>50&&oH>50)N.forEach(n=>{n.x*=sx;n.y*=sy;});
+  render();
+});
+
+requestAnimationFrame(()=>requestAnimationFrame(initWhenStable));
 </script>

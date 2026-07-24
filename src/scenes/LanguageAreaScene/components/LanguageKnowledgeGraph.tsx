@@ -69,7 +69,7 @@ export const LanguageKnowledgeGraph = ({ isZh }: LanguageKnowledgeGraphProps) =>
       className="lang-knowledge-frame"
       title={isZh ? '语言功能知识图谱' : 'Language function graph'}
       srcDoc={srcDoc}
-      loading="lazy"
+      loading="eager"
       sandbox="allow-scripts allow-same-origin"
       referrerPolicy="no-referrer"
     />
