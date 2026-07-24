@@ -482,31 +482,253 @@ input:focus-visible {
   font-size: 1.4rem;
 }
 
-.hippocampus-layout {
+.hippo-rebuild-layout {
   display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
+  grid-template-rows: minmax(0, 1fr) clamp(588px, 64vh, 868px);
   gap: 1rem;
+  min-height: clamp(1140px, 112svh, 1708px);
 }
 
-.fragment-column,
-.reconstruction-column {
+.hippo-upper-stage,
+.hippo-graph-stage {
   border: 1px solid var(--line);
   border-radius: 1rem;
   padding: 0.9rem;
-  background: rgba(14, 20, 28, 0.75);
+  background: rgba(14, 20, 28, 0.76);
+  min-height: 0;
 }
 
-.fragment-card {
-  width: 100%;
-  text-align: left;
-  border: 1px solid rgba(246, 244, 218, 0.22);
-  border-radius: 0.8rem;
-  padding: 0.7rem;
-  background: rgba(250, 224, 180, 0.06);
-  color: var(--ink);
+.hippo-upper-stage {
   display: grid;
-  gap: 0.2rem;
-  margin-bottom: 0.55rem;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  overflow: hidden;
+}
+
+.hippo-stage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.hippo-stage-label {
+  margin: 0;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hippo-stage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 0.9rem;
+  min-height: 0;
+}
+
+.hippo-card {
+  border: 1px solid rgba(132, 200, 206, 0.28);
+  border-radius: 0.9rem;
+  padding: 0.8rem;
+  background: rgba(9, 14, 20, 0.72);
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  min-height: 0;
+  overflow: auto;
+}
+
+.hippo-card h3,
+.hippo-final-compare h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+}
+
+.hippo-card-primary {
+  background:
+    radial-gradient(circle at 20% 14%, rgba(255, 183, 101, 0.13), transparent 44%),
+    rgba(9, 14, 20, 0.82);
+}
+
+.hippo-callout {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.hippo-source-name {
+  margin: 0;
+  padding: 0.42rem 0.6rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 183, 101, 0.45);
+  background: rgba(255, 183, 101, 0.12);
+  color: #ffe9c7;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.hippo-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.hippo-source-actions .ghost-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hippo-callout p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.hippo-observe-frame {
+  position: relative;
+  border-radius: 0.8rem;
+  overflow: hidden;
+  border: 1px solid rgba(246, 244, 218, 0.28);
+  min-height: clamp(260px, 34vh, 410px);
+  background: rgba(10, 14, 20, 0.88);
+}
+
+.hippo-observe-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hippo-countdown {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  border: 1px solid rgba(246, 244, 218, 0.35);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  background: rgba(7, 11, 17, 0.78);
+  color: var(--accent-cream);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.hippo-hidden-memory {
+  border: 1px dashed rgba(132, 200, 206, 0.45);
+  border-radius: 0.8rem;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 66% 28%, rgba(71, 213, 194, 0.12), transparent 40%),
+    linear-gradient(145deg, rgba(11, 17, 25, 0.88), rgba(6, 10, 16, 0.8));
+}
+
+.hippo-hidden-memory p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.hippo-form-block {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hippo-form-block label {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.hippo-form-block textarea {
+  width: 100%;
+  min-height: 88px;
+  max-height: 130px;
+  resize: vertical;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(132, 200, 206, 0.32);
+  background: rgba(11, 18, 27, 0.88);
+  color: var(--ink);
+  padding: 0.6rem 0.7rem;
+}
+
+.hippo-form-block .ghost-button[disabled] {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.hippo-generated-block {
+  border: 1px solid rgba(132, 200, 206, 0.26);
+  border-radius: 0.8rem;
+  background: rgba(7, 11, 16, 0.7);
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hippo-generated-title {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--accent-amber);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.hippo-generated-block img {
+  width: 100%;
+  max-height: 230px;
+  object-fit: cover;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(246, 244, 218, 0.2);
+}
+
+.hippo-final-compare {
+  border: 1px solid rgba(132, 200, 206, 0.32);
+  border-radius: 0.9rem;
+  padding: 0.8rem;
+  background: rgba(8, 13, 20, 0.84);
+}
+
+.hippo-compare-grid {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.hippo-compare-grid figure {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.hippo-compare-grid img {
+  width: 100%;
+  height: clamp(170px, 24vh, 280px);
+  object-fit: cover;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(246, 244, 218, 0.2);
+}
+
+.hippo-compare-grid figcaption {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.hippo-graph-stage {
+  min-height: clamp(588px, 64vh, 868px);
+  overflow: hidden;
+}
+
+.hippo-graph-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0.8rem;
+  display: block;
+  background: #070c12;
 }
 
 .warning-note {
@@ -612,8 +834,14 @@ input:focus-visible {
   }
 
   .map-grid,
-  .hippocampus-layout {
+  .hippo-stage-grid,
+  .hippo-compare-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hippo-rebuild-layout {
+    grid-template-rows: auto clamp(588px, 70svh, 896px);
+    min-height: clamp(1372px, 136svh, 1848px);
   }
 }
 

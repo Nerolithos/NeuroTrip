@@ -36,6 +36,7 @@ const AppRoutes = () => {
       <Route path="/rev-lingual" element={<Navigate to="/scene/rev-lingual" replace />} />
       <Route path="/scene/amygdala" element={<AmygdalaScene />} />
       <Route path="/scene/hippocampus" element={<HippocampusScene />} />
+      <Route path="/hippocampus" element={<Navigate to="/scene/hippocampus" replace />} />
       <Route path="/scene/default-mode-network" element={<DefaultModeScene />} />
       <Route path="/exit" element={<ExitScene />} />
       <Route path="/sources" element={<SourcesScene />} />
