@@ -35,9 +35,9 @@ const chapterEntries: ChapterEntry[] = [
     key: 'memory',
     titleZh: '第三章 · 记忆',
     titleEn: 'Chapter III · Memory',
-    summaryZh: '开发中：即将开放',
-    summaryEn: 'In progress: coming soon',
-    route: null,
+    summaryZh: '已开放：记忆章节过渡入口',
+    summaryEn: 'Available: Memory chapter transition',
+    route: '/scene/chapter-iii',
   },
   {
     key: 'fear',

@@ -11,6 +11,7 @@ import { GatewayScene } from './scenes/GatewayScene/GatewayScene'
 import { HippocampusScene } from './scenes/HippocampusScene/HippocampusScene'
 import { SourcesScene } from './scenes/SourcesScene/SourcesScene'
 import { ChapterIIScene } from './scenes/ChapterIIScene/ChapterIIScene'
+import { ChapterIIIScene } from './scenes/ChapterIIIScene/ChapterIIIScene'
 import { VisualSystemsConsole } from './scenes/VisualSystemsConsole/VisualSystemsConsole'
 import { LanguageAreaScene } from './scenes/LanguageAreaScene/LanguageAreaScene'
 import { RevLingualScene } from './scenes/RevLingualScene/RevLingualScene'
@@ -28,6 +29,7 @@ const AppRoutes = () => {
       <Route path="/scene/visual-cortex" element={<VisualSystemsConsole />} />
       <Route path="/scene/face-pipeline" element={<FacePipelineScene />} />
       <Route path="/scene/chapter-ii" element={<ChapterIIScene />} />
+      <Route path="/scene/chapter-iii" element={<ChapterIIIScene />} />
       <Route path="/scene/language-area" element={<LanguageAreaScene />} />
       <Route path="/scene/rev-lingual" element={<RevLingualScene />} />
       <Route path="/scene/amygdala" element={<AmygdalaScene />} />
