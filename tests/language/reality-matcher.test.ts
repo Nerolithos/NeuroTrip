@@ -163,4 +163,6 @@ test('requestRealityCardMatch prompt includes cultural and metaphor association 
   assert.match(capturedBody, /字面|文化|隐喻/)
   assert.match(capturedBody, /不得直接判为 0|不要直接判为 0|not assign 0/i)
   assert.match(capturedBody, /复合词|固定搭配|器物|茶刀|Pu-erh|tea knife/i)
+  assert.match(capturedBody, /0\.15|0\.33|0\.50|0\.70|0\.85/)
+  assert.match(capturedBody, /button[- ]keyboard|button[- ]apple|button[- ]light switch|button[- ]choice|button-选择/i)
 })
