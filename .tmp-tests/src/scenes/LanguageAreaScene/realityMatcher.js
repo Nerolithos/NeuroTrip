@@ -128,6 +128,8 @@ const buildSingleCardPrompt = (input) => {
         return [
             'You are a language-association evaluator for one image.',
             'Score only how strongly the user label semantically associates with this image concept.',
+            'Use a fast 3-lens check: literal meaning, cultural symbolism, and metaphorical/idiomatic association.',
+            'Do not collapse to strict literalism; if a stable cultural or metaphorical link exists, do not assign 0.',
             'Return strict minified JSON only: {"score":0.00,"reason":"..."}.',
             'reason must be 2-3 short sentences focused on lexical/semantic association paths.',
             'Do not mention percentages, confidence, or phrases like "so I think".',
@@ -138,6 +140,8 @@ const buildSingleCardPrompt = (input) => {
     return [
         '你是单图语言联想评估器。',
         '只评估“标签词”与这张图概念之间的语义联想强度，不要写视觉审美判断。',
+        '请快速做三路判断：字面义、文化象征、隐喻/习语联想。',
+        '不要过度字面化；若存在稳定的文化或隐喻关联，不得直接判为 0。',
         '仅返回最小化 JSON：{"score":0.00,"reason":"..."}。',
         'reason 必须是 2 到 3 句短句，说明语义场/语词联想路径。',
         '禁止出现百分比、置信度、以及“所以我认为”之类措辞。',

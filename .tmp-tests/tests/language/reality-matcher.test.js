@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { requestRealityLabelMatch } from '../../src/scenes/LanguageAreaScene/realityMatcher.js';
+import { requestRealityCardMatch, requestRealityLabelMatch } from '../../src/scenes/LanguageAreaScene/realityMatcher.js';
 const cards = [
     {
         id: 'c01',
@@ -90,4 +90,55 @@ test('requestRealityLabelMatch returns null when API response has no valid score
     });
     globalThis.fetch = originalFetch;
     assert.equal(result, null);
+});
+test('requestRealityCardMatch prompt includes cultural and metaphor association guardrails', async () => {
+    const originalFetch = globalThis.fetch;
+    const firstCard = cards[0];
+    assert.ok(firstCard);
+    let capturedBody = '';
+    let callCount = 0;
+    globalThis.fetch = (async (input, init) => {
+        callCount += 1;
+        if (typeof input === 'string' && input.startsWith('https://example.com/')) {
+            return new Response('mock-image-bytes', {
+                status: 200,
+                headers: { 'Content-Type': 'image/png' },
+            });
+        }
+        capturedBody = typeof init?.body === 'string' ? init.body : '';
+        const payload = {
+            choices: [
+                {
+                    message: {
+                        content: JSON.stringify({
+                            score: 0.31,
+                            reason: '文化语境里有象征联想路径。',
+                        }),
+                    },
+                },
+            ],
+        };
+        return new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    });
+    const result = await requestRealityCardMatch({
+        config: {
+            mode: 'proxy-endpoint',
+            endpoint: '/api/openrouter',
+            models: ['mock/model'],
+            reasonModels: ['mock/model'],
+            siteUrl: 'https://example.com',
+            title: 'test',
+        },
+        label: '性',
+        card: firstCard,
+        isZh: true,
+    });
+    globalThis.fetch = originalFetch;
+    assert.ok(result);
+    assert.ok(callCount >= 2);
+    assert.match(capturedBody, /字面|文化|隐喻/);
+    assert.match(capturedBody, /不得直接判为 0|不要直接判为 0|not assign 0/i);
 });
