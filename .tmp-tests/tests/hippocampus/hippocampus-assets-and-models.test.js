@@ -14,6 +14,6 @@ test('Hippocampus init-memory uses PNG sources', () => {
 test('Hippocampus image candidate list excludes known invalid stability model id', () => {
     const scenePath = resolve(process.cwd(), 'src/scenes/HippocampusScene/HippocampusScene.tsx');
     const content = readFileSync(scenePath, 'utf8');
-    assert.equal(content.includes("'bytedance-seed/seedream-4.5'"), true);
+    assert.equal(content.includes("'doubao-seedream-4-5-251128'"), true);
     assert.equal(content.includes('stabilityai/stable-diffusion-3.5-large'), false);
 });

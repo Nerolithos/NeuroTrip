@@ -1,4 +1,6 @@
 type Env = {
+  imager?: string
+  IMAGER?: string
   neurotrip?: string
   NEUROTRIP?: string
 }
@@ -21,6 +23,28 @@ const JSON_HEADERS = {
   'Content-Type': 'application/json',
 } as const
 
+const firstNonEmpty = (...values: Array<string | undefined>) => {
+  for (let index = 0; index < values.length; index += 1) {
+    const next = (values[index] || '').trim()
+    if (next) return next
+  }
+  return ''
+}
+
+const normalizeImageModel = (model: string) => {
+  const normalized = model.trim()
+  if (!normalized) return normalized
+
+  if (normalized === 'bytedance-seed/seedream-4.5') return 'doubao-seedream-4-5-251128'
+  if (normalized === 'bytedance-seed/seedream-4') return 'doubao-seedream-4-5-251128'
+
+  return normalized
+}
+
+const isArkModel = (model: string) => {
+  return model.startsWith('doubao-') || model.startsWith('seedream-')
+}
+
 const buildError = (status: number, message: string) => {
   return new Response(JSON.stringify({ error: message }), {
     status,
@@ -29,11 +53,6 @@ const buildError = (status: number, message: string) => {
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const secret = (env.neurotrip || env.NEUROTRIP || '').trim()
-  if (!secret) {
-    return buildError(500, 'Missing Cloudflare Pages secret: neurotrip')
-  }
-
   let payload: ChatBody | null = null
   try {
     payload = (await request.json()) as ChatBody
@@ -42,10 +61,24 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const kind = payload?.kind === 'image' ? 'image' : 'chat'
-  const model = (payload?.model || '').trim()
+  const rawModel = (payload?.model || '').trim()
+  const model = kind === 'image' ? normalizeImageModel(rawModel) : rawModel
   if (!model) {
     return buildError(400, 'model is required')
   }
+
+  const secret =
+    kind === 'image'
+      ? firstNonEmpty(env.imager, env.IMAGER, env.neurotrip, env.NEUROTRIP)
+      : firstNonEmpty(env.neurotrip, env.NEUROTRIP, env.imager, env.IMAGER)
+
+  if (!secret) {
+    return kind === 'image'
+      ? buildError(500, 'Missing Cloudflare Pages secret: imager (or neurotrip fallback)')
+      : buildError(500, 'Missing Cloudflare Pages secret: neurotrip (or imager fallback)')
+  }
+
+  const provider = secret.startsWith('ark-') || isArkModel(model) ? 'ark' : 'openrouter'
 
   const messages = payload?.messages
   const prompt = (payload?.prompt || '').trim()
@@ -63,9 +96,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const title = (payload?.title || 'neurotrip').trim() || 'neurotrip'
 
   const upstreamEndpoint =
-    kind === 'image'
-      ? 'https://openrouter.ai/api/v1/images/generations'
-      : 'https://openrouter.ai/api/v1/chat/completions'
+    provider === 'ark'
+      ? kind === 'image'
+        ? 'https://ark.cn-beijing.volces.com/api/v3/images/generations'
+        : 'https://ark.cn-beijing.volces.com/api/v3/chat/completions'
+      : kind === 'image'
+        ? 'https://openrouter.ai/api/v1/images/generations'
+        : 'https://openrouter.ai/api/v1/chat/completions'
+
+  const responseFormat =
+    typeof payload?.response_format === 'string' && payload.response_format.trim()
+      ? payload.response_format.trim()
+      : provider === 'ark'
+        ? 'url'
+        : 'b64_json'
 
   const upstreamPayload =
     kind === 'image'
@@ -74,10 +118,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           prompt,
           size: typeof payload?.size === 'string' && payload.size.trim() ? payload.size : '1024x1024',
           n: typeof payload?.n === 'number' ? payload.n : 1,
-          response_format:
-            typeof payload?.response_format === 'string' && payload.response_format.trim()
-              ? payload.response_format
-              : 'b64_json',
+          response_format: responseFormat,
         }
       : {
           ...payload,
@@ -87,14 +128,19 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           temperature: typeof payload?.temperature === 'number' ? payload.temperature : 0,
         }
 
+  const upstreamHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${secret}`,
+  }
+
+  if (provider === 'openrouter') {
+    upstreamHeaders['HTTP-Referer'] = siteUrl
+    upstreamHeaders['X-Title'] = title
+  }
+
   const upstream = await fetch(upstreamEndpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${secret}`,
-      'HTTP-Referer': siteUrl,
-      'X-Title': title,
-    },
+    headers: upstreamHeaders,
     body: JSON.stringify(upstreamPayload),
   })
 

@@ -12,7 +12,7 @@ import { buildProxyEndpointCandidates, resolveChatapConfig, type ChatapConfig } 
 const OBSERVE_DURATION_MS = 12_000
 
 const IMAGE_MODEL_CANDIDATES = [
-  'bytedance-seed/seedream-4.5',
+  'doubao-seedream-4-5-251128',
   'openai/gpt-image-1',
   'google/gemini-2.5-flash-image-preview',
   'black-forest-labs/flux-1.1-pro',
