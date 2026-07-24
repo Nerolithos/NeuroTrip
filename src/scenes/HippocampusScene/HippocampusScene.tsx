@@ -7,16 +7,16 @@ import initMemoryMaleHackathon from '../../assets/init-memory/male-hackathon.web
 import initMemoryPerfumePoster from '../../assets/init-memory/perfume-poster.webp'
 import initMemoryOilPainting from '../../assets/init-memory/oil-painting.webp'
 import initMemoryLakeView from '../../assets/init-memory/lakeside-view.webp'
-import { resolveChatapConfig, type ChatapConfig } from '../FacePipelineScene/emojiMatcher'
+import { buildProxyEndpointCandidates, resolveChatapConfig, type ChatapConfig } from '../FacePipelineScene/emojiMatcher'
 
 const OBSERVE_DURATION_MS = 12_000
 
 const IMAGE_MODEL_CANDIDATES = [
-  'google/gemini-2.5-flash-image-preview',
   'openai/gpt-image-1',
+  'google/gemini-2.5-flash-image-preview',
   'black-forest-labs/flux-1.1-pro',
+  'black-forest-labs/flux-1-schnell',
   'stabilityai/stable-diffusion-3.5-large',
-  'bytedance/seedream-3',
 ]
 
 type InitMemoryCard = {
@@ -372,67 +372,85 @@ const requestReconstructedImage = async (input: {
   const { config, models, prompt, signal, isZh } = input
   const headers = buildOpenRouterHeaders(config)
   let lastFailure: ReconstructFailure = { ok: false }
+  const proxyEndpoints =
+    config.mode === 'proxy-endpoint'
+      ? buildProxyEndpointCandidates(config.endpoint)
+      : [config.endpoint]
 
   for (let index = 0; index < models.length; index += 1) {
     const model = (models[index] || '').trim()
     if (!model) continue
 
-    // Strategy A: image endpoint first.
-    const imageEndpoint =
-      config.mode === 'direct-openrouter' ? 'https://openrouter.ai/api/v1/images/generations' : config.endpoint
-    const imageBody =
+    const imageEndpoints =
       config.mode === 'direct-openrouter'
-        ? {
-            model,
-            prompt,
-            size: '1024x1024',
-            n: 1,
-            response_format: 'b64_json',
-          }
-        : {
-            kind: 'image',
-            model,
-            prompt,
-            size: '1024x1024',
-            n: 1,
-            response_format: 'b64_json',
-            siteUrl: config.siteUrl,
-            title: config.title,
-          }
+        ? ['https://openrouter.ai/api/v1/images/generations']
+        : proxyEndpoints
 
-    try {
-      const imageResponse = await fetch(imageEndpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(imageBody),
-        signal,
-      })
+    for (let endpointIndex = 0; endpointIndex < imageEndpoints.length; endpointIndex += 1) {
+      const imageEndpoint = imageEndpoints[endpointIndex] || config.endpoint
+      const imageBody =
+        config.mode === 'direct-openrouter'
+          ? {
+              model,
+              prompt,
+              size: '1024x1024',
+              n: 1,
+              response_format: 'b64_json',
+            }
+          : {
+              kind: 'image',
+              model,
+              prompt,
+              size: '1024x1024',
+              n: 1,
+              response_format: 'b64_json',
+              siteUrl: config.siteUrl,
+              title: config.title,
+            }
 
-      if (imageResponse.ok) {
-        const imagePayload = await imageResponse.json()
-        const imageUrl = parseImageResult(imagePayload)
-        if (imageUrl) {
-          return { ok: true, imageUrl, model }
+      try {
+        const imageResponse = await fetch(imageEndpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(imageBody),
+          signal,
+        })
+
+        if (imageResponse.ok) {
+          const imagePayload = await imageResponse.json()
+          const imageUrl = parseImageResult(imagePayload)
+          if (imageUrl) {
+            return { ok: true, imageUrl, model }
+          }
+        } else {
+          const text = await imageResponse.text()
+          lastFailure = {
+            ok: false,
+            status: imageResponse.status,
+            detail: compactErrorDetail(text),
+            endpoint: imageEndpoint,
+          }
         }
-      } else {
-        const text = await imageResponse.text()
-        lastFailure = {
-          ok: false,
-          status: imageResponse.status,
-          detail: compactErrorDetail(text),
-          endpoint: imageEndpoint,
+
+        if (imageResponse.ok) {
+          lastFailure = {
+            ok: false,
+            status: 422,
+            detail: 'Image response did not contain a usable image payload.',
+            endpoint: imageEndpoint,
+          }
         }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          lastFailure = {
+            ok: false,
+            status: 0,
+            detail: 'Request timeout',
+            endpoint: imageEndpoint,
+          }
+        }
+        // continue to chat fallback for the same model.
       }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        lastFailure = {
-          ok: false,
-          status: 0,
-          detail: 'Request timeout',
-          endpoint: imageEndpoint,
-        }
-      }
-      // continue to chat fallback for the same model.
     }
 
     // Strategy B: chat completion with image modality fallback.
@@ -454,40 +472,48 @@ const requestReconstructedImage = async (input: {
       modalities: ['image', 'text'],
     }
 
-    try {
-      const chatResponse = await fetch(config.endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(chatBody),
-        signal,
-      })
+    const chatEndpoints =
+      config.mode === 'proxy-endpoint'
+        ? proxyEndpoints
+        : [config.endpoint]
 
-      if (!chatResponse.ok) {
-        const text = await chatResponse.text()
-        lastFailure = {
-          ok: false,
-          status: chatResponse.status,
-          detail: compactErrorDetail(text),
-          endpoint: config.endpoint,
-        }
-        continue
-      }
+    for (let endpointIndex = 0; endpointIndex < chatEndpoints.length; endpointIndex += 1) {
+      const chatEndpoint = chatEndpoints[endpointIndex] || config.endpoint
+      try {
+        const chatResponse = await fetch(chatEndpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(chatBody),
+          signal,
+        })
 
-      const chatPayload = await chatResponse.json()
-      const fallbackImageUrl = parseImageResult(chatPayload)
-      if (fallbackImageUrl) {
-        return { ok: true, imageUrl: fallbackImageUrl, model }
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        lastFailure = {
-          ok: false,
-          status: 0,
-          detail: 'Request timeout',
-          endpoint: config.endpoint,
+        if (!chatResponse.ok) {
+          const text = await chatResponse.text()
+          lastFailure = {
+            ok: false,
+            status: chatResponse.status,
+            detail: compactErrorDetail(text),
+            endpoint: chatEndpoint,
+          }
+          continue
         }
+
+        const chatPayload = await chatResponse.json()
+        const fallbackImageUrl = parseImageResult(chatPayload)
+        if (fallbackImageUrl) {
+          return { ok: true, imageUrl: fallbackImageUrl, model }
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          lastFailure = {
+            ok: false,
+            status: 0,
+            detail: 'Request timeout',
+            endpoint: chatEndpoint,
+          }
+        }
+        // try next endpoint or model
       }
-      // try next model
     }
   }
 

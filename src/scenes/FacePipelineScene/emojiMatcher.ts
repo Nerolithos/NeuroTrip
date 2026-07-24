@@ -18,8 +18,37 @@ export type ChatapConfig = {
   title: string
 }
 
+const DEFAULT_PROXY_ENDPOINT = '/api/openrouter'
+const PROXY_ENDPOINT_FALLBACKS = [
+  '/functions/api/openrouter',
+  '/.netlify/functions/openrouter',
+  '/.netlify/functions/api/openrouter',
+]
+
 const DEFAULT_MODEL = 'nvidia/nemotron-nano-12b-v2-vl:free'
 const DEFAULT_FALLBACK_MODEL = 'google/gemma-4-31b-it:free'
+
+const isAbsoluteHttpUrl = (value: string) => value.startsWith('http://') || value.startsWith('https://')
+
+export const buildProxyEndpointCandidates = (endpoint: string): string[] => {
+  const normalized = endpoint.trim() || DEFAULT_PROXY_ENDPOINT
+  if (isAbsoluteHttpUrl(normalized)) {
+    return [normalized]
+  }
+
+  const output: string[] = []
+  const insert = (value: string) => {
+    const next = value.trim()
+    if (!next || output.includes(next)) return
+    output.push(next)
+  }
+
+  insert(normalized)
+  insert(DEFAULT_PROXY_ENDPOINT)
+  PROXY_ENDPOINT_FALLBACKS.forEach((item) => insert(item))
+
+  return output
+}
 
 export const extractEmojiFromText = (text: string): string | null => {
   if (!text) return null
@@ -129,7 +158,7 @@ export const resolveChatapConfig = (input: {
   if (!chatap) {
     return {
       mode: 'proxy-endpoint',
-      endpoint: '/api/openrouter',
+      endpoint: DEFAULT_PROXY_ENDPOINT,
       models,
       reasonModels,
       siteUrl: input.siteUrl,
@@ -216,6 +245,10 @@ export const requestEmojiMatch = async (input: {
 }): Promise<string | null> => {
   const { config, imageDataUrl, isZh } = input
   const prompt = buildEmojiPrompt(isZh)
+  const endpoints =
+    config.mode === 'proxy-endpoint'
+      ? buildProxyEndpointCandidates(config.endpoint)
+      : [config.endpoint]
 
   for (let index = 0; index < config.models.length; index += 1) {
     const model = config.models[index]
@@ -240,24 +273,27 @@ export const requestEmojiMatch = async (input: {
       title: config.title,
     })
 
-    try {
-      const response = await fetch(config.endpoint, {
-        method: 'POST',
-        headers,
-        body,
-      })
+    for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex += 1) {
+      const endpoint = endpoints[endpointIndex] || config.endpoint
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body,
+        })
 
-      if (!response.ok) {
-        continue
-      }
+        if (!response.ok) {
+          continue
+        }
 
-      const payload = await response.json()
-      const emoji = parseEmojiFromChatResponse(payload)
-      if (emoji) {
-        return emoji
+        const payload = await response.json()
+        const emoji = parseEmojiFromChatResponse(payload)
+        if (emoji) {
+          return emoji
+        }
+      } catch {
+        // try next endpoint or model candidate
       }
-    } catch {
-      // try next model candidate
     }
   }
 
@@ -272,6 +308,10 @@ export const requestEmojiReason = async (input: {
 }): Promise<string | null> => {
   const { config, imageDataUrl, isZh, emojiHint } = input
   const prompt = buildEmojiReasonPrompt({ isZh, emojiHint })
+  const endpoints =
+    config.mode === 'proxy-endpoint'
+      ? buildProxyEndpointCandidates(config.endpoint)
+      : [config.endpoint]
 
   for (let index = 0; index < config.reasonModels.length; index += 1) {
     const model = config.reasonModels[index]
@@ -295,24 +335,27 @@ export const requestEmojiReason = async (input: {
       title: config.title,
     })
 
-    try {
-      const response = await fetch(config.endpoint, {
-        method: 'POST',
-        headers,
-        body,
-      })
+    for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex += 1) {
+      const endpoint = endpoints[endpointIndex] || config.endpoint
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body,
+        })
 
-      if (!response.ok) {
-        continue
-      }
+        if (!response.ok) {
+          continue
+        }
 
-      const payload = await response.json()
-      const reason = parseEmojiReasonFromChatResponse(payload)
-      if (reason) {
-        return reason
+        const payload = await response.json()
+        const reason = parseEmojiReasonFromChatResponse(payload)
+        if (reason) {
+          return reason
+        }
+      } catch {
+        // try next endpoint or model candidate
       }
-    } catch {
-      // try next model candidate
     }
   }
 

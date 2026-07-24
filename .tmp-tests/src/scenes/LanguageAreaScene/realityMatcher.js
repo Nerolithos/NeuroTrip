@@ -1,3 +1,4 @@
+import { buildProxyEndpointCandidates } from '../FacePipelineScene/emojiMatcher.js';
 const clamp01 = (value) => {
     if (!Number.isFinite(value))
         return 0;
@@ -243,6 +244,9 @@ export const requestRealityCardMatch = async (input) => {
     const prompt = buildSingleCardPrompt({ label: trimmed, isZh, card });
     const imageDataUrl = await toDataUrl(card.imageUrl);
     const imagePayload = imageDataUrl || card.imageUrl;
+    const endpoints = config.mode === 'proxy-endpoint'
+        ? buildProxyEndpointCandidates(config.endpoint)
+        : [config.endpoint];
     for (let index = 0; index < config.models.length; index += 1) {
         const model = config.models[index];
         if (!model)
@@ -263,26 +267,29 @@ export const requestRealityCardMatch = async (input) => {
             siteUrl: config.siteUrl,
             title: config.title,
         });
-        try {
-            const response = await fetch(config.endpoint, {
-                method: 'POST',
-                headers: buildRequestHeaders(config),
-                body,
-            });
-            if (!response.ok)
-                continue;
-            const payload = await response.json();
-            const score = parseSingleScore(payload, card);
-            if (score == null)
-                continue;
-            return {
-                score,
-                reason: parseReason(payload),
-                model,
-            };
-        }
-        catch {
-            // try next model candidate
+        for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex += 1) {
+            const endpoint = endpoints[endpointIndex] || config.endpoint;
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: buildRequestHeaders(config),
+                    body,
+                });
+                if (!response.ok)
+                    continue;
+                const payload = await response.json();
+                const score = parseSingleScore(payload, card);
+                if (score == null)
+                    continue;
+                return {
+                    score,
+                    reason: parseReason(payload),
+                    model,
+                };
+            }
+            catch {
+                // try next endpoint or model candidate
+            }
         }
     }
     return null;
@@ -293,6 +300,9 @@ export const requestRealityLabelMatch = async (input) => {
     if (!trimmed)
         return null;
     const prompt = buildPrompt({ label: trimmed, isZh, cards });
+    const endpoints = config.mode === 'proxy-endpoint'
+        ? buildProxyEndpointCandidates(config.endpoint)
+        : [config.endpoint];
     for (let index = 0; index < config.models.length; index += 1) {
         const model = config.models[index];
         if (!model)
@@ -310,26 +320,29 @@ export const requestRealityLabelMatch = async (input) => {
             siteUrl: config.siteUrl,
             title: config.title,
         });
-        try {
-            const response = await fetch(config.endpoint, {
-                method: 'POST',
-                headers: buildRequestHeaders(config),
-                body,
-            });
-            if (!response.ok)
-                continue;
-            const payload = await response.json();
-            const scores = parseScores(payload, cards);
-            if (!scores)
-                continue;
-            return {
-                scores,
-                reason: parseReason(payload),
-                model,
-            };
-        }
-        catch {
-            // try next model candidate
+        for (let endpointIndex = 0; endpointIndex < endpoints.length; endpointIndex += 1) {
+            const endpoint = endpoints[endpointIndex] || config.endpoint;
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: buildRequestHeaders(config),
+                    body,
+                });
+                if (!response.ok)
+                    continue;
+                const payload = await response.json();
+                const scores = parseScores(payload, cards);
+                if (!scores)
+                    continue;
+                return {
+                    scores,
+                    reason: parseReason(payload),
+                    model,
+                };
+            }
+            catch {
+                // try next endpoint or model candidate
+            }
         }
     }
     return null;

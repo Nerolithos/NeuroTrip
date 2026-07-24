@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  buildProxyEndpointCandidates,
   extractEmojiFromText,
   parseEmojiFromChatResponse,
   parseEmojiReasonFromChatResponse,
@@ -100,5 +101,20 @@ test('resolveChatapConfig supports independent model candidates for reason gener
     'reason-fallback-model:free',
     'nvidia/nemotron-nano-12b-v2-vl:free',
     'google/gemma-4-31b-it:free',
+  ])
+})
+
+test('buildProxyEndpointCandidates includes platform fallback endpoints for default proxy route', () => {
+  assert.deepEqual(buildProxyEndpointCandidates('/api/openrouter'), [
+    '/api/openrouter',
+    '/functions/api/openrouter',
+    '/.netlify/functions/openrouter',
+    '/.netlify/functions/api/openrouter',
+  ])
+})
+
+test('buildProxyEndpointCandidates keeps explicit remote endpoint as-is', () => {
+  assert.deepEqual(buildProxyEndpointCandidates('https://example.com/api/openrouter'), [
+    'https://example.com/api/openrouter',
   ])
 })

@@ -21,13 +21,17 @@ import hydrantImage from '../../../assets/hydrant.jpg'
 import brainImage from '../../../assets/brain.jpg'
 import mouseImage from '../../../assets/mouse.jpg'
 import constantinopleImage from '../../../assets/ Constantinople.jpg'
+import initMemoryMaleHackathon from '../../assets/init-memory/male-hackathon.webp'
+import initMemoryPerfumePoster from '../../assets/init-memory/perfume-poster.webp'
+import initMemoryOilPainting from '../../assets/init-memory/oil-painting.webp'
+import initMemoryLakeView from '../../assets/init-memory/lakeside-view.webp'
 
 const realityCards: RealityImageCard[] = [
   { id: 'c01', label: 'fox', labelZh: '狐狸', imageUrl: foxImage, tags: ['animal', 'wildlife', 'predator'], description: 'fox in natural habitat' },
   { id: 'c02', label: 'cat', labelZh: '猫', imageUrl: catImage, tags: ['animal', 'pet', 'mammal'], description: 'domestic cat portrait' },
   { id: 'c03', label: 'apple fruit', labelZh: '苹果果实', imageUrl: appleImage, tags: ['food', 'fruit', 'nutrition'], description: 'red apple close-up' },
   { id: 'c04', label: 'annabergite', labelZh: '镍华', imageUrl: annImage, tags: ['mineral', 'annabergite', 'nickel'], description: 'green annabergite mineral sample' },
-  { id: 'c05', label: 'apple logo device', labelZh: '苹果品牌设备', imageUrl: 'https://loremflickr.com/640/420/apple,logo,laptop?lock=105', tags: ['tool', 'device', 'brand', 'technology'], description: 'laptop with apple logo' },
+  { id: 'c05', label: 'apple logo device', labelZh: '苹果品牌设备', imageUrl: initMemoryMaleHackathon, tags: ['tool', 'device', 'brand', 'technology'], description: 'laptop with apple logo' },
   {
     id: 'c06',
     label: 'eyjafjallajökull volcano',
@@ -36,25 +40,25 @@ const realityCards: RealityImageCard[] = [
     tags: ['danger', 'nature', 'geology', 'volcano', 'iceland'],
     description: 'Eyjafjallajökull volcano landscape in Iceland',
   },
-  { id: 'c07', label: 'charging cable', labelZh: '充电线', imageUrl: 'https://loremflickr.com/640/420/usb,cable,charger?lock=107', tags: ['tool', 'device', 'technology'], description: 'usb charging cable' },
+  { id: 'c07', label: 'charging cable', labelZh: '充电线', imageUrl: initMemoryPerfumePoster, tags: ['tool', 'device', 'technology'], description: 'usb charging cable' },
   { id: 'c08', label: 'AdventureX', labelZh: 'AdventureX', imageUrl: advxImage, tags: ['conference', 'tech', 'event', 'brand'], description: 'AdventureX visual identity image' },
-  { id: 'c09', label: 'trap', labelZh: '陷阱', imageUrl: 'https://loremflickr.com/640/420/trap,mousetrap?lock=109', tags: ['danger', 'tool', 'mechanical'], description: 'spring-loaded trap' },
+  { id: 'c09', label: 'trap', labelZh: '陷阱', imageUrl: initMemoryOilPainting, tags: ['danger', 'tool', 'mechanical'], description: 'spring-loaded trap' },
   { id: 'c10', label: 'artichoke', labelZh: '菜蓟', imageUrl: artichokeImage, tags: ['food', 'vegetable', 'plant'], description: 'artichoke vegetable photo' },
-  { id: 'c11', label: 'toolkit', labelZh: '工具箱', imageUrl: 'https://loremflickr.com/640/420/tools,toolbox?lock=111', tags: ['tool', 'hardware', 'repair'], description: 'toolbox with hand tools' },
+  { id: 'c11', label: 'toolkit', labelZh: '工具箱', imageUrl: initMemoryLakeView, tags: ['tool', 'hardware', 'repair'], description: 'toolbox with hand tools' },
   { id: 'c12', label: 'brain model', labelZh: '大脑模型', imageUrl: brainImage, tags: ['organ', 'biology', 'science'], description: 'human brain model' },
   { id: 'c13', label: 'mouse animal', labelZh: '老鼠', imageUrl: mouseImage, tags: ['animal', 'wildlife', 'rodent'], description: 'small mouse in field' },
-  { id: 'c14', label: 'computer mouse', labelZh: '电脑鼠标', imageUrl: 'https://loremflickr.com/640/420/computer,mouse?lock=114', tags: ['tool', 'device', 'technology'], description: 'computer mouse on desk' },
-  { id: 'c15', label: 'bread', labelZh: '面包', imageUrl: 'https://loremflickr.com/640/420/bread,bakery?lock=115', tags: ['food', 'meal', 'carb'], description: 'bread loaf on wooden board' },
-  { id: 'c16', label: 'lightning', labelZh: '闪电', imageUrl: 'https://loremflickr.com/640/420/lightning,storm?lock=116', tags: ['danger', 'weather', 'energy'], description: 'lightning strike in storm' },
-  { id: 'c17', label: 'knife', labelZh: '刀具', imageUrl: 'https://loremflickr.com/640/420/knife,kitchen?lock=117', tags: ['tool', 'danger', 'kitchen'], description: 'kitchen knife close-up' },
+  { id: 'c14', label: 'computer mouse', labelZh: '电脑鼠标', imageUrl: mouseImage, tags: ['tool', 'device', 'technology'], description: 'computer mouse on desk' },
+  { id: 'c15', label: 'bread', labelZh: '面包', imageUrl: artichokeImage, tags: ['food', 'meal', 'carb'], description: 'bread loaf on wooden board' },
+  { id: 'c16', label: 'lightning', labelZh: '闪电', imageUrl: volcanoImage, tags: ['danger', 'weather', 'energy'], description: 'lightning strike in storm' },
+  { id: 'c17', label: 'knife', labelZh: '刀具', imageUrl: hydrantImage, tags: ['tool', 'danger', 'kitchen'], description: 'kitchen knife close-up' },
   { id: 'c18', label: 'nijigen', labelZh: '二次元', imageUrl: nijigenImage, tags: ['anime', 'illustration', 'culture', 'style'], description: '2D anime-style character visual' },
   { id: 'c19', label: '42', labelZh: '数字42', imageUrl: fortyTwoImage, tags: ['number', 'symbol', 'math', 'answer'], description: 'number 42 visual card' },
-  { id: 'c20', label: 'noodles', labelZh: '面条', imageUrl: 'https://loremflickr.com/640/420/noodles,food?lock=120', tags: ['food', 'meal', 'asian'], description: 'bowl of noodles' },
+  { id: 'c20', label: 'noodles', labelZh: '面条', imageUrl: initMemoryPerfumePoster, tags: ['food', 'meal', 'asian'], description: 'bowl of noodles' },
   { id: 'c21', label: 'constantinople', labelZh: '君士坦丁堡', imageUrl: constantinopleImage, tags: ['city', 'history', 'culture', 'constantinople'], description: 'historical image of Constantinople' },
   { id: 'c22', label: 'fire extinguisher', labelZh: '灭火器', imageUrl: hydrantImage, tags: ['tool', 'safety', 'danger'], description: 'fire safety equipment image' },
-  { id: 'c23', label: 'tree forest', labelZh: '树与森林', imageUrl: 'https://loremflickr.com/640/420/tree,forest?lock=123', tags: ['nature', 'plant', 'ecology'], description: 'forest tree scene' },
-  { id: 'c24', label: 'capsule pill', labelZh: '胶囊', imageUrl: 'https://loremflickr.com/640/420/pill,capsule,medicine?lock=124', tags: ['medicine', 'health', 'pharmacy'], description: 'capsule pills close-up' },
-  { id: 'c25', label: 'satellite dish', labelZh: '卫星天线', imageUrl: 'https://loremflickr.com/640/420/satellite,dish?lock=125', tags: ['tool', 'device', 'communication'], description: 'satellite communication dish' },
+  { id: 'c23', label: 'tree forest', labelZh: '树与森林', imageUrl: foxImage, tags: ['nature', 'plant', 'ecology'], description: 'forest tree scene' },
+  { id: 'c24', label: 'capsule pill', labelZh: '胶囊', imageUrl: brainImage, tags: ['medicine', 'health', 'pharmacy'], description: 'capsule pills close-up' },
+  { id: 'c25', label: 'satellite dish', labelZh: '卫星天线', imageUrl: advxImage, tags: ['tool', 'device', 'communication'], description: 'satellite communication dish' },
 ]
 
 type CardStage = 'neutral' | 'pending' | 'processing' | 'done' | 'fallback'
