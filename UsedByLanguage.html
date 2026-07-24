@@ -791,8 +791,12 @@ function seed(){
 }
 function resize(){
   const d=window.devicePixelRatio||1;
-  W=cv.clientWidth=innerWidth; H=cv.clientHeight=innerHeight;
-  cv.width=W*d; cv.height=H*d; cx.setTransform(d,0,0,d,0,0);
+  const rect=cv.getBoundingClientRect();
+  W=Math.max(1, Math.round(rect.width || innerWidth));
+  H=Math.max(1, Math.round(rect.height || innerHeight));
+  cv.width=Math.max(1, Math.round(W*d));
+  cv.height=Math.max(1, Math.round(H*d));
+  cx.setTransform(d,0,0,d,0,0);
   CXp=W*0.5; CYp=H*0.43; BASE=Math.min(W,H)*0.28;
 }
 addEventListener("resize",resize);
@@ -806,12 +810,18 @@ function draw(){
   spinY += 0.0105;
   spinX += 0.0042;
 
+  const fitLimit = Math.max(56, Math.min(W, H) * 0.5 - 42);
+  const maxBaseByViewport = Math.max(42, (fitLimit - 44) / 1.34);
+  const sphereBase = Math.min(BASE, maxBaseByViewport);
+
   const targetCXR = CXp + clusterShift * W;
-  const visibleRadius = BASE * 1.34 + 44;
+  const visibleRadius = sphereBase * 1.34 + 44;
   const minX = visibleRadius;
   const maxX = W - visibleRadius;
-  const CXR = minX < maxX ? Math.max(minX, Math.min(maxX, targetCXR)) : CXp;
-  const CYR = CYp;
+  const minY = visibleRadius;
+  const maxY = H - visibleRadius;
+  const CXR = minX < maxX ? Math.max(minX, Math.min(maxX, targetCXR)) : W * 0.5;
+  const CYR = minY < maxY ? Math.max(minY, Math.min(maxY, CYp)) : H * 0.5;
 
   const project = (x,y,z)=>{
     const ay = spinY + Math.sin(t*0.21)*0.1;
@@ -822,15 +832,15 @@ function draw(){
     const z1 = -x*sy + z*cy;
     const y2 = y*cxr - z1*sxr;
     const z2 = y*sxr + z1*cxr;
-    const perspective = BASE*1.18;
-    const depth = perspective / Math.max(BASE*0.2, perspective + z2*0.95);
+    const perspective = sphereBase*1.18;
+    const depth = perspective / Math.max(sphereBase*0.2, perspective + z2*0.95);
     return {x:x1,y:y2,z:z2,depth};
   };
 
   cx.clearRect(0,0,W,H);
 
   // 内部辉光
-  const R=BASE*curR;
+  const R=sphereBase*curR;
   const g=cx.createRadialGradient(CXR,CYR,0,CXR,CYR,R*1.25);
   g.addColorStop(0,"rgba(255,222,170,.12)");
   g.addColorStop(.6,"rgba(255,206,132,.058)");
@@ -839,9 +849,9 @@ function draw(){
 
   // 节点
   for(const n of nodes){
-    const x0=n.x*BASE;
-    const y0=n.y*BASE;
-    const z0=(n.z*BASE*0.96)+Math.sin(t*n.w+n.p)*BASE*0.018;
+    const x0=n.x*sphereBase;
+    const y0=n.y*sphereBase;
+    const z0=(n.z*sphereBase*0.96)+Math.sin(t*n.w+n.p)*sphereBase*0.018;
     const p=project(x0,y0,z0);
     const x=CXR+p.x;
     const y=CYR+p.y;
@@ -862,9 +872,9 @@ function draw(){
   for(const o of outer){
     if(o.lit<=0) continue;
     o.lit=Math.min(1,o.lit+0.028);
-    const x0=o.x*BASE;
-    const y0=o.y*BASE;
-    const z0=(o.z*BASE*0.9)+Math.sin(t*0.9+o.p)*BASE*0.03;
+    const x0=o.x*sphereBase;
+    const y0=o.y*sphereBase;
+    const z0=(o.z*sphereBase*0.9)+Math.sin(t*0.9+o.p)*sphereBase*0.03;
     const p=project(x0,y0,z0);
     const x=CXR+p.x, y=CYR+p.y;
     const pu=.6+.4*Math.sin(t*1.6+o.p*1.9);
