@@ -1,0 +1,482 @@
+.lang-shell {
+  display: grid;
+  gap: 0.78rem;
+}
+
+.lang-stage-header {
+  border: 1px solid rgba(119, 172, 189, 0.34);
+  border-radius: 0.72rem;
+  padding: 0.52rem 0.68rem;
+  background: linear-gradient(140deg, rgba(12, 20, 30, 0.82), rgba(8, 14, 22, 0.72));
+}
+
+.lang-stage-header h2 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  letter-spacing: 0.11em;
+  color: rgba(236, 246, 251, 0.98);
+  text-transform: uppercase;
+}
+
+.lang-stage-header p {
+  margin: 0.22rem 0 0;
+  color: rgba(187, 218, 231, 0.9);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+.lang-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'reality'
+    'graph';
+  gap: 0.72rem;
+}
+
+.lang-window-reality {
+  grid-area: reality;
+}
+
+.lang-window-graph {
+  grid-area: graph;
+}
+
+.lang-window-graph .vsc-window-content {
+  padding: 0.5rem;
+}
+
+.lang-note,
+.lang-global-disclaimer {
+  margin: 0;
+  color: rgba(182, 211, 223, 0.9);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+}
+
+.lang-global-disclaimer {
+  color: rgba(247, 197, 141, 0.95);
+}
+
+.lang-seed-row {
+  margin-top: 0.45rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34rem;
+}
+
+.lang-seed-row button,
+.lang-label-row button,
+.lang-world-deck button {
+  border: 1px solid rgba(120, 162, 177, 0.48);
+  background: rgba(10, 17, 24, 0.88);
+  color: rgba(222, 237, 245, 0.96);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  border-radius: 999px;
+  padding: 0.24rem 0.56rem;
+}
+
+.lang-seed-row button:hover,
+.lang-label-row button:hover,
+.lang-world-deck button:hover {
+  border-color: rgba(196, 235, 247, 0.8);
+}
+
+.lang-input,
+.lang-label-input {
+  margin-top: 0.45rem;
+  width: 100%;
+  border: 1px solid rgba(120, 161, 177, 0.46);
+  border-radius: 0.56rem;
+  background: rgba(8, 14, 20, 0.9);
+  color: rgba(229, 242, 248, 0.98);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  padding: 0.42rem 0.56rem;
+}
+
+.lang-universe-active {
+  margin-top: 0.52rem;
+  border: 1px solid rgba(124, 170, 186, 0.42);
+  border-radius: 0.6rem;
+  background: rgba(11, 18, 26, 0.82);
+  padding: 0.44rem 0.52rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.lang-universe-active header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lang-universe-active strong {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: rgba(236, 246, 251, 0.98);
+}
+
+.lang-universe-active span {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: rgba(145, 223, 203, 0.96);
+}
+
+.lang-universe-active p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: rgba(205, 226, 236, 0.95);
+}
+
+.lang-universe-active small {
+  color: rgba(170, 201, 215, 0.9);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.lang-world-deck {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.36rem;
+}
+
+.lang-world-deck button {
+  border-radius: 0.56rem;
+  text-align: left;
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.4rem 0.48rem;
+}
+
+.lang-world-deck button b {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+}
+
+.lang-world-deck button span {
+  font-size: 0.62rem;
+  color: rgba(184, 210, 222, 0.92);
+  font-family: var(--font-mono);
+}
+
+.lang-world-deck button.is-active {
+  border-color: rgba(248, 231, 167, 0.85);
+  background: linear-gradient(135deg, rgba(50, 45, 28, 0.86), rgba(24, 24, 16, 0.8));
+}
+
+.lang-subhead {
+  margin: 0;
+  color: rgba(226, 242, 248, 0.95);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+}
+
+.lang-prediction-stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.lang-prediction-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.lang-prediction-list li {
+  display: grid;
+  grid-template-columns: minmax(4rem, auto) 1fr auto;
+  gap: 0.4rem;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: rgba(221, 238, 247, 0.96);
+}
+
+.lang-prob-bar {
+  height: 0.36rem;
+  border-radius: 999px;
+  background: rgba(22, 33, 46, 0.9);
+  overflow: hidden;
+}
+
+.lang-prob-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(118, 227, 210, 0.95), rgba(204, 247, 235, 0.95));
+}
+
+.lang-cluster-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.36rem;
+}
+
+.lang-cluster-row article {
+  border: 1px solid rgba(114, 157, 173, 0.35);
+  border-radius: 0.5rem;
+  padding: 0.34rem 0.42rem;
+  background: rgba(10, 16, 24, 0.82);
+}
+
+.lang-cluster-row h4 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: rgba(233, 244, 250, 0.96);
+}
+
+.lang-cluster-row p {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.59rem;
+  color: rgba(178, 208, 221, 0.92);
+}
+
+.lang-label-row {
+  margin-top: 0.42rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.lang-label-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.lang-reality-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.lang-match-button {
+  border: 1px solid rgba(242, 218, 147, 0.72);
+  background: linear-gradient(145deg, rgba(55, 47, 25, 0.88), rgba(29, 24, 15, 0.86));
+  color: rgba(249, 234, 188, 0.98);
+}
+
+.lang-match-note {
+  margin: 0.38rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  color: rgba(210, 226, 233, 0.94);
+}
+
+.lang-match-note b {
+  color: rgba(245, 236, 197, 0.98);
+}
+
+.lang-reality-grid {
+  margin-top: 0.54rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.lang-reality-card {
+  border: 1px solid rgba(107, 152, 167, 0.34);
+  border-radius: 0.52rem;
+  background: rgba(9, 15, 22, 0.78);
+  min-height: 8.8rem;
+  display: grid;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.lang-reality-card img {
+  width: 100%;
+  height: 6.9rem;
+  object-fit: cover;
+  display: block;
+}
+
+.lang-reality-card.has-black-fill {
+  background: #000;
+}
+
+.lang-reality-card.has-black-fill img {
+  background: #000;
+  object-fit: contain;
+  padding: 0.24rem;
+}
+
+.lang-reality-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.34rem;
+}
+
+.lang-reality-card small {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: rgba(179, 206, 219, 0.92);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lang-reality-card b {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(221, 238, 247, 0.96);
+}
+
+.lang-reality-card.is-neutral {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  border-color: rgba(107, 152, 167, 0.34);
+  box-shadow: none;
+  animation: none;
+}
+
+.lang-reality-card.is-neutral img {
+  filter: none;
+}
+
+.lang-reality-card.is-low {
+  opacity: 0.38;
+  filter: saturate(0.42) brightness(0.72);
+  transform: scale(0.95);
+}
+
+.lang-reality-card.is-low img {
+  filter: grayscale(0.62) brightness(0.75);
+}
+
+.lang-reality-card.is-mid {
+  opacity: 0.92;
+  border-color: rgba(109, 212, 244, 0.95);
+  box-shadow: 0 0 0 1px rgba(109, 212, 244, 0.32) inset, 0 8px 16px rgba(0, 0, 0, 0.24);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.lang-reality-card.is-mid img {
+  filter: saturate(1.25) contrast(1.08);
+}
+
+.lang-reality-card.is-high {
+  opacity: 1;
+  border-color: rgba(255, 234, 146, 0.98);
+  box-shadow:
+    0 0 0 2px rgba(255, 234, 146, 0.32) inset,
+    0 0 18px rgba(255, 208, 92, 0.42),
+    0 14px 24px rgba(0, 0, 0, 0.34);
+  transform: translateY(-4px) scale(1.06);
+  animation: lang-card-pulse 1.45s ease-in-out infinite alternate;
+}
+
+.lang-reality-card.is-high img {
+  filter: saturate(1.62) contrast(1.14) brightness(1.08);
+}
+
+.lang-reality-card.is-high .lang-reality-meta {
+  background: linear-gradient(180deg, rgba(50, 42, 18, 0.18), rgba(52, 42, 18, 0.42));
+}
+
+.lang-reality-card.is-high b {
+  color: rgba(255, 241, 188, 0.98);
+}
+
+.lang-reality-grid.is-matching .lang-reality-card {
+  border-width: 2px;
+  border-color: rgba(133, 220, 245, 0.88);
+  box-shadow: 0 0 0 1px rgba(133, 220, 245, 0.22) inset, 0 0 16px rgba(92, 199, 241, 0.3);
+  animation: lang-matching-border 0.95s ease-in-out infinite alternate;
+}
+
+.lang-reality-grid.is-matching .lang-reality-card img {
+  filter: saturate(1.12) brightness(1.03);
+}
+
+@keyframes lang-card-pulse {
+  from {
+    box-shadow:
+      0 0 0 2px rgba(255, 234, 146, 0.24) inset,
+      0 0 12px rgba(255, 208, 92, 0.28),
+      0 12px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  to {
+    box-shadow:
+      0 0 0 2px rgba(255, 234, 146, 0.38) inset,
+      0 0 22px rgba(255, 208, 92, 0.52),
+      0 16px 28px rgba(0, 0, 0, 0.38);
+  }
+}
+
+@keyframes lang-matching-border {
+  from {
+    box-shadow: 0 0 0 1px rgba(133, 220, 245, 0.14) inset, 0 0 10px rgba(92, 199, 241, 0.2);
+  }
+
+  to {
+    box-shadow: 0 0 0 1px rgba(133, 220, 245, 0.3) inset, 0 0 18px rgba(92, 199, 241, 0.42);
+  }
+}
+
+.lang-disclaimer {
+  margin: 0.56rem 0 0;
+  color: rgba(246, 196, 137, 0.94);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.lang-knowledge-frame {
+  width: 100%;
+  min-height: clamp(24rem, 52vh, 37rem);
+  border: 1px solid rgba(112, 162, 178, 0.34);
+  border-radius: 0.62rem;
+  background: rgba(5, 10, 15, 0.95);
+}
+
+@media (max-width: 980px) {
+  .lang-grid {
+    grid-template-areas:
+      'reality'
+      'graph';
+  }
+
+  .lang-reality-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .lang-reality-card {
+    min-height: 8rem;
+  }
+
+  .lang-reality-card img {
+    height: 6.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .lang-reality-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lang-reality-card {
+    min-height: 7.2rem;
+  }
+
+  .lang-reality-card img {
+    height: 5.3rem;
+  }
+}

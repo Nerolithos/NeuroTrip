@@ -270,10 +270,10 @@ export const ChapterIIScene = () => {
     recordInteraction({
       type: 'click',
       scene: '/scene/chapter-ii',
-      target: 'continue-to-amygdala',
+      target: 'continue-to-language-area',
       timestamp: Date.now(),
     })
-    navigate('/scene/amygdala')
+    navigate('/scene/language-area')
   }
 
   return (

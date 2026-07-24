@@ -116,6 +116,7 @@ const nodeById={};
 const N=G.nodes.map(nd=>{const o=Object.assign({},nd,{deg:0,x:0,y:0,vx:0,vy:0,fx:null,fy:null});nodeById[nd.id]=o;return o;});
 const links=G.links.map(l=>Object.assign({},l,{s:nodeById[l.s],t:nodeById[l.t]})).filter(l=>l.s&&l.t);
 links.forEach(l=>{l.s.deg++;l.t.deg++;});
+N.forEach(n=>{n.radius=6+Math.min(n.deg,8)*1.5;});
 const ETYPES=[...new Set(links.map(l=>l.evidence_type))].sort((a,b)=>
   links.filter(l=>l.evidence_type===b).length-links.filter(l=>l.evidence_type===a).length);
 const active=new Set(ETYPES);
@@ -123,6 +124,46 @@ let selected=null;
 
 const svg=document.getElementById("svg"),SVGNS="http://www.w3.org/2000/svg";
 let W=900,H=600;
+let viewX=0,viewY=0,viewW=900,viewH=600,zoom=1;
+const ZOOM_MIN=1,ZOOM_MAX=6;
+const defaultPanelHtml=`<div class="panel-empty">点击任意节点<br>查看它的连接与证据</div>`;
+
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function applyViewBox(){svg.setAttribute("viewBox",`${viewX} ${viewY} ${viewW} ${viewH}`);}
+
+function setZoomAtClient(nextZoom,clientX,clientY){
+  const nz=clamp(nextZoom,ZOOM_MIN,ZOOM_MAX);
+  if(Math.abs(nz-zoom)<1e-4)return;
+
+  const r=svg.getBoundingClientRect();
+  const px=clamp((clientX-r.left)/Math.max(r.width,1),0,1);
+  const py=clamp((clientY-r.top)/Math.max(r.height,1),0,1);
+  const worldX=viewX+px*viewW;
+  const worldY=viewY+py*viewH;
+
+  const nextViewW=W/nz;
+  const nextViewH=H/nz;
+  const maxX=Math.max(0,W-nextViewW);
+  const maxY=Math.max(0,H-nextViewH);
+
+  viewX=clamp(worldX-px*nextViewW,0,maxX);
+  viewY=clamp(worldY-py*nextViewH,0,maxY);
+  viewW=nextViewW;
+  viewH=nextViewH;
+  zoom=nz;
+  applyViewBox();
+}
+
+function resetZoom(){
+  zoom=1;
+  viewX=0;
+  viewY=0;
+  viewW=W;
+  viewH=H;
+  applyViewBox();
+}
+
+function resetPanel(){document.getElementById("aside").innerHTML=defaultPanelHtml;}
 const defs=document.createElementNS(SVGNS,"defs");
 ETYPES.forEach(t=>{const m=document.createElementNS(SVGNS,"marker");
   m.setAttribute("id","arw-"+t);m.setAttribute("viewBox","0 0 10 10");m.setAttribute("refX","9");
@@ -141,7 +182,7 @@ const edgeEls=links.map(l=>{const p=document.createElementNS(SVGNS,"path");
   p.addEventListener("mouseenter",e=>showTip(e,l));p.addEventListener("mousemove",moveTip);
   p.addEventListener("mouseleave",hideTip);gEdges.appendChild(p);return p;});
 N.forEach(n=>{const g=document.createElementNS(SVGNS,"g");g.setAttribute("class","node");
-  const r=6+Math.min(n.deg,8)*1.5;let shp;
+  const r=n.radius;let shp;
   if(n.type==="region"){shp=document.createElementNS(SVGNS,"circle");shp.setAttribute("r",r);}
   else{shp=document.createElementNS(SVGNS,"rect");const s=r*1.7;shp.setAttribute("x",-s/2);
     shp.setAttribute("y",-s/2);shp.setAttribute("width",s);shp.setAttribute("height",s);
@@ -149,23 +190,28 @@ N.forEach(n=>{const g=document.createElementNS(SVGNS,"g");g.setAttribute("class"
   shp.setAttribute("class","shp");
   g.appendChild(shp);
   if(n.deg>=2){const t=document.createElementNS(SVGNS,"text");t.setAttribute("text-anchor","middle");
-    t.setAttribute("dy",-(r+4));t.textContent=n.label;g.appendChild(t);}   // 叶子节点不常显标签，悬停再显
+    t.setAttribute("dy",-(r+4));t.textContent=n.label;g.appendChild(t);n._label=t;}   // 叶子节点不常显标签，悬停再显
+  else{n._label=null;}
   gNodes.appendChild(g);
-  g.addEventListener("pointerdown",e=>startDrag(e,n,g));g.addEventListener("click",()=>select(n));
+  g.addEventListener("pointerdown",e=>startDrag(e,n,g));g.addEventListener("click",e=>{e.stopPropagation();select(n);});
   g.addEventListener("mouseenter",e=>showNodeTip(e,n));g.addEventListener("mousemove",moveTip);
   g.addEventListener("mouseleave",hideTip);
   n._g=g;});
 
-const REP=3200+N.length*55;   // 斥力随节点数增强，大图铺得更开更圆
 function simulate(iter){for(let k=0;k<iter;k++){
-  for(const a of N){for(const b of N){if(a===b)continue;
-    let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2);const rep=REP/d2;
-    a.vx+=dx/d*rep;a.vy+=dy/d*rep;}
-    a.vx+=(W/2-a.x)*.0035;a.vy+=(H/2-a.y)*.0035;}
+  for(let i=0;i<N.length;i++){const a=N[i];
+    for(let j=i+1;j<N.length;j++){const b=N[j];
+      let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2),ux=dx/d,uy=dy/d;
+      const rep=5600/d2;a.vx+=ux*rep;a.vy+=uy*rep;b.vx-=ux*rep;b.vy-=uy*rep;
+      const minD=(a.radius+b.radius)*1.45;
+      if(d<minD){const push=(minD-d)*.22;a.vx+=ux*push;a.vy+=uy*push;b.vx-=ux*push;b.vy-=uy*push;}
+    }
+    a.vx+=(W/2-a.x)*.0018;a.vy+=(H/2-a.y)*.0018;
+  }
   for(const l of links){let dx=l.t.x-l.s.x,dy=l.t.y-l.s.y,d=Math.sqrt(dx*dx+dy*dy)+.01;
-    const f=(d-95)*.02;l.s.vx+=dx/d*f;l.s.vy+=dy/d*f;l.t.vx-=dx/d*f;l.t.vy-=dy/d*f;}
+    const f=(d-108)*.018;l.s.vx+=dx/d*f;l.s.vy+=dy/d*f;l.t.vx-=dx/d*f;l.t.vy-=dy/d*f;}
   for(const a of N){if(a.fx!=null){a.x=a.fx;a.y=a.fy;a.vx=a.vy=0;continue;}
-    a.x+=a.vx*.5;a.y+=a.vy*.5;a.vx*=.82;a.vy*=.82;}}}   // 不硬夹边界，交给 fitView 缩放到视口
+    a.x+=a.vx*.5;a.y+=a.vy*.5;a.vx*=.84;a.vy*=.84;}}}   // 不硬夹边界，交给 fitView 缩放到视口
 
 function fitView(padT,padX,padB){
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -183,20 +229,40 @@ function render(){
     const sx=l.s.x,sy=l.s.y,tx=l.t.x,ty=l.t.y,mx=(sx+tx)/2,my=(sy+ty)/2,dx=tx-sx,dy=ty-sy,nl=Math.hypot(dx,dy)||1;
     const cx=mx-dy/nl*16,cy=my+dx/nl*16;e.setAttribute("d",`M${sx} ${sy} Q${cx} ${cy} ${tx} ${ty}`);});
   N.forEach(n=>{const vis=links.some(l=>(l.s===n||l.t===n)&&active.has(l.evidence_type));
+    const nearSelected=selected&&links.some(l=>active.has(l.evidence_type)&&((l.s===selected&&l.t===n)||(l.t===selected&&l.s===n)));
     n._g.style.display=vis?"":"none";let cls="node";
     if(selected){if(n===selected)cls+=" sel";
-      else if(!links.some(l=>active.has(l.evidence_type)&&((l.s===selected&&l.t===n)||(l.t===selected&&l.s===n))))cls+=" dim";}
+      else if(!nearSelected)cls+=" dim";}
+    if(n._label){const showLabel=!!selected?(n===selected||nearSelected):(zoom>=1.35||n.deg>=4);n._label.style.display=showLabel?"":"none";}
     n._g.setAttribute("class",cls);n._g.setAttribute("transform",`translate(${n.x} ${n.y})`);});
 }
 
 let drag=null;
+let pan=null;
+let suppressBlankClick=false;
 function startDrag(e,n,g){e.stopPropagation();drag={n,g};g.classList.add("dragging");
   n.fx=n.x;n.fy=n.y;g.setPointerCapture(e.pointerId);}
-svg.addEventListener("pointermove",e=>{if(!drag)return;const pt=toSvg(e.clientX,e.clientY);
-  drag.n.x=drag.n.fx=pt.x;drag.n.y=drag.n.fy=pt.y;render();});
-svg.addEventListener("pointerup",()=>{if(!drag)return;drag.g.classList.remove("dragging");
-  drag.n.fx=drag.n.fy=null;drag=null;});   // 释放即停留，不再重排，保持已适配好的布局
-function toSvg(cx,cy){const r=svg.getBoundingClientRect();return{x:(cx-r.left)/r.width*W,y:(cy-r.top)/r.height*H};}
+svg.addEventListener("pointerdown",e=>{if(e.target!==svg)return;pan={sx:e.clientX,sy:e.clientY,baseX:viewX,baseY:viewY,moved:false};suppressBlankClick=false;svg.setPointerCapture(e.pointerId);});
+svg.addEventListener("pointermove",e=>{
+  if(drag){const pt=toSvg(e.clientX,e.clientY);drag.n.x=drag.n.fx=pt.x;drag.n.y=drag.n.fy=pt.y;render();return;}
+  if(!pan)return;
+  const r=svg.getBoundingClientRect();
+  const dx=((e.clientX-pan.sx)/Math.max(r.width,1))*viewW;
+  const dy=((e.clientY-pan.sy)/Math.max(r.height,1))*viewH;
+  const maxX=Math.max(0,W-viewW),maxY=Math.max(0,H-viewH);
+  viewX=clamp(pan.baseX-dx,0,maxX);viewY=clamp(pan.baseY-dy,0,maxY);
+  if(Math.abs(e.clientX-pan.sx)>2||Math.abs(e.clientY-pan.sy)>2)pan.moved=true;
+  suppressBlankClick=pan.moved;applyViewBox();
+});
+svg.addEventListener("pointerup",()=>{
+  if(drag){drag.g.classList.remove("dragging");drag.n.fx=drag.n.fy=null;drag=null;}
+  if(pan){suppressBlankClick=pan.moved;pan=null;}
+});   // 释放即停留，不再重排，保持已适配好的布局
+svg.addEventListener("pointercancel",()=>{if(pan)pan=null;});
+svg.addEventListener("wheel",e=>{e.preventDefault();const k=e.deltaY>0?1/1.12:1.12;setZoomAtClient(zoom*k,e.clientX,e.clientY);},{passive:false});
+svg.addEventListener("dblclick",()=>resetZoom());
+svg.addEventListener("click",()=>{if(drag||suppressBlankClick){suppressBlankClick=false;return;}selected=null;render();resetPanel();});
+function toSvg(cx,cy){const r=svg.getBoundingClientRect();return{x:viewX+(cx-r.left)/r.width*viewW,y:viewY+(cy-r.top)/r.height*viewH};}
 
 function select(n){selected=n;render();renderPanel(n);}
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
@@ -245,7 +311,7 @@ document.getElementById("foot").innerHTML=
   `<span class="lg"><span class="sh dia"></span>功能/细胞</span>`+
   `<span class="lg"><span class="ln"></span>有向(投射/调制)</span>`+
   `<span class="lg"><span class="ln dash"></span>减弱</span>`+
-  `<span class="spacer" style="flex:1"></span><span>数据来源 PubMed 摘要抽取 · 点节点看证据引文与 PMID</span>`;
+  `<span class="spacer" style="flex:1"></span><span>数据来源 PubMed 摘要抽取 · 滚轮缩放/双击复位 · 拖动空白平移 · 点击空白恢复概览</span>`;
 
 document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")
   ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
@@ -253,10 +319,10 @@ document.getElementById("themeBtn").onclick=()=>{const cur=document.documentElem
 
 let anim=null;
 function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:900;H=r.height>50?r.height:600;
-  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);}
+  resetZoom();}
 function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
   n.x=W/2+Math.cos(a)*Math.min(W,H)*0.35;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.3;});
-  simulate(600);fitView(56,54,34);render();}
+  simulate(720);fitView(56,54,34);render();}
 addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
 requestAnimationFrame(()=>requestAnimationFrame(init));
 </script>
