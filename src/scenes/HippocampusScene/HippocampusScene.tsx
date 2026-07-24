@@ -10,13 +10,10 @@ import initMemoryLakeView from '../../assets/init-memory/lakeside-view.png'
 import { buildProxyEndpointCandidates, resolveChatapConfig, type ChatapConfig } from '../FacePipelineScene/emojiMatcher'
 
 const OBSERVE_DURATION_MS = 12_000
+const HIPPO_ARK_ONLY = true
 
 const IMAGE_MODEL_CANDIDATES = [
   'doubao-seedream-4-5-251128',
-  'openai/gpt-image-1',
-  'google/gemini-2.5-flash-image-preview',
-  'black-forest-labs/flux-1.1-pro',
-  'black-forest-labs/flux-1-schnell',
 ]
 
 type InitMemoryCard = {
@@ -246,6 +243,12 @@ const buildReconstructErrorMessage = (isZh: boolean, failure: ReconstructFailure
       : `Image endpoint 404: ${endpoint} is missing. Deploy /api/openrouter functions or set VITE_CHATAP for direct OpenRouter mode.`
   }
 
+  if (status === 401) {
+    return isZh
+      ? `做图接口 401：鉴权失败。当前已切到 Ark-only，请确认 Cloudflare 环境变量 imager 已正确设置为 ark- 开头密钥。${detail ? ` 详情：${detail}` : ''}`
+      : `Image endpoint 401: authorization failed. Ark-only mode is enabled, so verify Cloudflare secret imager is set to a valid ark-* key.${detail ? ` Detail: ${detail}` : ''}`
+  }
+
   if (status === 403) {
     return isZh
       ? `做图接口 403：OpenRouter 鉴权被拒绝。请检查 API key、域名白名单与代理密钥配置。${detail ? ` 详情：${detail}` : ''}`
@@ -374,13 +377,15 @@ const requestReconstructedImage = async (input: {
   prompt: string
   signal: AbortSignal
   isZh: boolean
+  arkOnly?: boolean
 }): Promise<ReconstructResult> => {
-  const { config, models, prompt, signal, isZh } = input
-  const headers = buildOpenRouterHeaders(config)
+  const { config, models, prompt, signal, isZh, arkOnly = false } = input
+  const headers = arkOnly ? { 'Content-Type': 'application/json' } : buildOpenRouterHeaders(config)
   let lastFailure: ReconstructFailure | null = null
-  const preferredEndpoint = config.endpoint
+  const preferredEndpoint = arkOnly ? '/api/openrouter' : config.endpoint
 
   const failurePriority = (status?: number) => {
+    if (status === 401) return 9
     if (status === 400) return 8
     if (status === 403) return 7
     if (status === 405) return 6
@@ -414,23 +419,27 @@ const requestReconstructedImage = async (input: {
   }
 
   const proxyEndpoints =
-    config.mode === 'proxy-endpoint'
-      ? buildProxyEndpointCandidates(config.endpoint)
-      : [config.endpoint]
+    arkOnly
+      ? ['/api/openrouter']
+      : config.mode === 'proxy-endpoint'
+        ? buildProxyEndpointCandidates(config.endpoint)
+        : [config.endpoint]
 
   for (let index = 0; index < models.length; index += 1) {
     const model = (models[index] || '').trim()
     if (!model) continue
 
     const imageEndpoints =
-      config.mode === 'direct-openrouter'
-        ? ['https://openrouter.ai/api/v1/images/generations']
-        : proxyEndpoints
+      arkOnly
+        ? proxyEndpoints
+        : config.mode === 'direct-openrouter'
+          ? ['https://openrouter.ai/api/v1/images/generations']
+          : proxyEndpoints
 
     for (let endpointIndex = 0; endpointIndex < imageEndpoints.length; endpointIndex += 1) {
       const imageEndpoint = imageEndpoints[endpointIndex] || config.endpoint
       const imageBody =
-        config.mode === 'direct-openrouter'
+        !arkOnly && config.mode === 'direct-openrouter'
           ? {
               model,
               prompt,
@@ -440,11 +449,12 @@ const requestReconstructedImage = async (input: {
             }
           : {
               kind: 'image',
+              provider: arkOnly ? 'ark' : undefined,
               model,
               prompt,
               size: '1024x1024',
               n: 1,
-              response_format: 'b64_json',
+              response_format: arkOnly ? 'url' : 'b64_json',
               siteUrl: config.siteUrl,
               title: config.title,
             }
@@ -472,7 +482,7 @@ const requestReconstructedImage = async (input: {
             endpoint: imageEndpoint,
           })
 
-          if (config.mode === 'proxy-endpoint' && imageResponse.status !== 404) {
+          if ((arkOnly || config.mode === 'proxy-endpoint') && imageResponse.status !== 404) {
             break
           }
         }
@@ -496,6 +506,10 @@ const requestReconstructedImage = async (input: {
         }
         // continue to chat fallback for the same model.
       }
+    }
+
+    if (arkOnly) {
+      continue
     }
 
     // Strategy B: chat completion with image modality fallback.
@@ -611,6 +625,12 @@ export const HippocampusScene = () => {
 
   const modelCandidates = useMemo(() => {
     const env = import.meta.env as Record<string, string | undefined>
+
+    if (HIPPO_ARK_ONLY) {
+      const model = (env.VITE_HIPPOCAMPUS_IMAGE_MODEL || IMAGE_MODEL_CANDIDATES[0] || '').trim()
+      return model ? [model] : ['doubao-seedream-4-5-251128']
+    }
+
     return pickImageModels(
       (env.VITE_HIPPOCAMPUS_IMAGE_MODEL || env.VITE_CHATAP_MODEL || '').trim(),
       (env.VITE_HIPPOCAMPUS_IMAGE_MODEL_FALLBACK || env.VITE_CHATAP_MODEL_FALLBACK || '').trim(),
@@ -716,6 +736,7 @@ export const HippocampusScene = () => {
         prompt,
         signal: controller.signal,
         isZh,
+        arkOnly: HIPPO_ARK_ONLY,
       })
 
       if (!result.ok) {
@@ -762,6 +783,7 @@ export const HippocampusScene = () => {
         prompt,
         signal: controller.signal,
         isZh,
+        arkOnly: HIPPO_ARK_ONLY,
       })
 
       if (!result.ok) {

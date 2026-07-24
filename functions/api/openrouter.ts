@@ -7,6 +7,7 @@ type Env = {
 
 type ChatBody = {
   kind?: 'chat' | 'image'
+  provider?: 'ark' | 'openrouter'
   model?: string
   messages?: unknown
   prompt?: string
@@ -67,18 +68,30 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return buildError(400, 'model is required')
   }
 
+  const requestedProvider =
+    payload?.provider === 'ark'
+      ? 'ark'
+      : payload?.provider === 'openrouter'
+        ? 'openrouter'
+        : null
+
+  const provider =
+    requestedProvider || (kind === 'image' && isArkModel(model) ? 'ark' : 'openrouter')
+
   const secret =
     kind === 'image'
-      ? firstNonEmpty(env.imager, env.IMAGER, env.neurotrip, env.NEUROTRIP)
+      ? provider === 'ark'
+        ? firstNonEmpty(env.imager, env.IMAGER)
+        : firstNonEmpty(env.neurotrip, env.NEUROTRIP)
       : firstNonEmpty(env.neurotrip, env.NEUROTRIP, env.imager, env.IMAGER)
 
   if (!secret) {
     return kind === 'image'
-      ? buildError(500, 'Missing Cloudflare Pages secret: imager (or neurotrip fallback)')
+      ? provider === 'ark'
+        ? buildError(500, 'Missing Cloudflare Pages secret: imager')
+        : buildError(500, 'Missing Cloudflare Pages secret: neurotrip')
       : buildError(500, 'Missing Cloudflare Pages secret: neurotrip (or imager fallback)')
   }
-
-  const provider = secret.startsWith('ark-') || isArkModel(model) ? 'ark' : 'openrouter'
 
   const messages = payload?.messages
   const prompt = (payload?.prompt || '').trim()
@@ -123,6 +136,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       : {
           ...payload,
           kind: undefined,
+          provider: undefined,
           model,
           messages,
           temperature: typeof payload?.temperature === 'number' ? payload.temperature : 0,
