@@ -30,8 +30,10 @@ const AppRoutes = () => {
       <Route path="/scene/face-pipeline" element={<FacePipelineScene />} />
       <Route path="/scene/chapter-ii" element={<ChapterIIScene />} />
       <Route path="/scene/chapter-iii" element={<ChapterIIIScene />} />
+      <Route path="/chapter-iii" element={<Navigate to="/scene/chapter-iii" replace />} />
       <Route path="/scene/language-area" element={<LanguageAreaScene />} />
       <Route path="/scene/rev-lingual" element={<RevLingualScene />} />
+      <Route path="/rev-lingual" element={<Navigate to="/scene/rev-lingual" replace />} />
       <Route path="/scene/amygdala" element={<AmygdalaScene />} />
       <Route path="/scene/hippocampus" element={<HippocampusScene />} />
       <Route path="/scene/default-mode-network" element={<DefaultModeScene />} />

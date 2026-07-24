@@ -1,5 +1,5 @@
 import { useEffect, type CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useNeuroTripStore } from '../../stores/neuroTripStore'
 import { useUiLanguageStore } from '../../stores/uiLanguageStore'
 import memory1 from '../../assets/memory/1.webp'
@@ -51,7 +51,7 @@ const polaroids: Polaroid[] = [
     orientation: 'landscape',
     width: 'clamp(10.2rem, 15.6vw, 12.6rem)',
     fallX: '0.8vw',
-    delay: '0.05s',
+    delay: '0.22s',
     duration: '9.4s',
   },
   {
@@ -63,7 +63,7 @@ const polaroids: Polaroid[] = [
     orientation: 'portrait',
     width: 'clamp(7.4rem, 11.8vw, 9rem)',
     fallX: '-0.9vw',
-    delay: '0.1s',
+    delay: '0.44s',
     duration: '9.2s',
   },
   {
@@ -75,7 +75,7 @@ const polaroids: Polaroid[] = [
     orientation: 'landscape',
     width: 'clamp(10rem, 15.2vw, 12.4rem)',
     fallX: '1.1vw',
-    delay: '0.15s',
+    delay: '0.66s',
     duration: '10.2s',
   },
   {
@@ -87,7 +87,7 @@ const polaroids: Polaroid[] = [
     orientation: 'portrait',
     width: 'clamp(7.8rem, 12vw, 9.4rem)',
     fallX: '-1vw',
-    delay: '0.2s',
+    delay: '0.88s',
     duration: '8.8s',
   },
   {
@@ -99,7 +99,7 @@ const polaroids: Polaroid[] = [
     orientation: 'portrait',
     width: 'clamp(8rem, 12.2vw, 9.6rem)',
     fallX: '0.7vw',
-    delay: '0.25s',
+    delay: '1.1s',
     duration: '9.8s',
   },
   {
@@ -111,7 +111,7 @@ const polaroids: Polaroid[] = [
     orientation: 'portrait',
     width: 'clamp(7.5rem, 11.8vw, 9rem)',
     fallX: '-0.8vw',
-    delay: '0.3s',
+    delay: '1.32s',
     duration: '9.1s',
   },
   {
@@ -123,7 +123,7 @@ const polaroids: Polaroid[] = [
     orientation: 'landscape',
     width: 'clamp(10.3rem, 15.8vw, 12.8rem)',
     fallX: '1.2vw',
-    delay: '0.35s',
+    delay: '1.54s',
     duration: '9.7s',
   },
   {
@@ -135,7 +135,7 @@ const polaroids: Polaroid[] = [
     orientation: 'landscape',
     width: 'clamp(10rem, 15.2vw, 12.2rem)',
     fallX: '-1.1vw',
-    delay: '0.4s',
+    delay: '1.76s',
     duration: '9.4s',
   },
   {
@@ -147,7 +147,7 @@ const polaroids: Polaroid[] = [
     orientation: 'landscape',
     width: 'clamp(9.8rem, 14.8vw, 12rem)',
     fallX: '0.9vw',
-    delay: '0.45s',
+    delay: '1.98s',
     duration: '9.6s',
   },
   {
@@ -159,7 +159,7 @@ const polaroids: Polaroid[] = [
     orientation: 'landscape',
     width: 'clamp(10.4rem, 16vw, 13rem)',
     fallX: '-0.7vw',
-    delay: '0.5s',
+    delay: '2.2s',
     duration: '10s',
   },
   {
@@ -171,7 +171,7 @@ const polaroids: Polaroid[] = [
     orientation: 'portrait',
     width: 'clamp(7.8rem, 12vw, 9.3rem)',
     fallX: '1.3vw',
-    delay: '0.55s',
+    delay: '2.42s',
     duration: '10.2s',
   },
 ]
@@ -180,8 +180,10 @@ const islands: Array<'a' | 'b' | 'c'> = ['a', 'b', 'c']
 
 export const ChapterIIIScene = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const language = useUiLanguageStore((state) => state.language)
   const isZh = language === 'zh'
+  const enterWithBlur = new URLSearchParams(location.search).get('transition') === 'blur'
   const setCurrentScene = useNeuroTripStore((state) => state.setCurrentScene)
   const recordInteraction = useNeuroTripStore((state) => state.recordInteraction)
 
@@ -206,7 +208,7 @@ export const ChapterIIIScene = () => {
 
   return (
     <section
-      className="chapter-iii-scene"
+      className={`chapter-iii-scene${enterWithBlur ? ' chapter-iii-transition-in' : ''}`}
       aria-label={isZh ? '第三章节过渡' : 'Chapter III transition'}
       role="button"
       tabIndex={0}
