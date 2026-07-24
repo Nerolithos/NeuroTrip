@@ -74,7 +74,7 @@ export const MemoryGameScene = () => {
     if (!host) return
 
     window.__MEMORY_GAME_LANG = language
-    window.__MEMORY_GAME_CONTINUE_PATH = '/scene/default-mode-network'
+    window.__MEMORY_GAME_CONTINUE_PATH = '/scene/chapter-iv'
     window.__MEMORY_GAME_NAVIGATE = (to: string) => {
       navigate(to)
     }

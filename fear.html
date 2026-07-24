@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恐惧 · 你刚才怕的，是一个不存在的东西</title>
+<style>
+  :root{
+    --ink:#eae7e1; --dim:#8b877f; --faint:#4a4741;
+    --serif:"Songti SC","SimSun","Source Han Serif SC","Noto Serif CJK SC",serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#000;color:var(--ink);font-family:var(--serif);overflow:hidden;cursor:default}
+  /* 暗角：收紧时黑暗向内逼近 */
+  #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+    box-shadow:inset 0 0 140px 30px #000;transition:box-shadow 1.1s ease}
+  #vig.tight{box-shadow:inset 0 0 340px 190px #000}
+  #vig.breathe{animation:breathe 3.4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{box-shadow:inset 0 0 150px 30px #000}50%{box-shadow:inset 0 0 190px 55px #000}}
+
+  #stage{position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    padding:8vh 7vw;text-align:center}
+  .stack{max-width:760px;display:flex;flex-direction:column;gap:20px}
+
+  #chapter{
+    position:fixed;
+    top:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(8px);
+    z-index:3;
+    font-size:clamp(20px,2.8vw,30px);
+    letter-spacing:.28em;
+    line-height:1.2;
+    color:var(--dim);
+    text-transform:uppercase;
+    pointer-events:none;
+    opacity:0;
+    white-space:nowrap;
+  }
+
+  #chapter.show{animation:chapterReveal 3.2s cubic-bezier(.22,.61,.36,1) forwards}
+  @keyframes chapterReveal{
+    from{opacity:0;transform:translateX(-50%) translateY(8px)}
+    to{opacity:1;transform:translateX(-50%) translateY(0)}
+  }
+
+  .ln{font-size:clamp(17px,2.7vw,23px);line-height:1.9;letter-spacing:.06em;color:var(--ink);
+    opacity:0;animation:fade 1.3s ease forwards}
+  .ln.dim{font-size:clamp(13px,2vw,15px);color:var(--dim);letter-spacing:.12em}
+  .ln em{font-style:normal;color:#e0705c}
+  .ln b{font-weight:400;color:#fff}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* 倒数大字 */
+  .num{font-size:clamp(90px,26vw,240px);font-weight:400;letter-spacing:.02em;color:#f2efe9;
+    line-height:1;animation:pop .32s ease both}
+  .num.jit{animation:pop .32s ease both, jit .5s ease-in-out infinite}
+  .num.panic{color:rgb(255,0,0);text-shadow:none}
+  @keyframes pop{from{opacity:0;transform:scale(1.14)}to{opacity:1;transform:scale(1)}}
+  @keyframes jit{0%,100%{transform:translate(0,0)}25%{transform:translate(-1.5px,1px)}
+    75%{transform:translate(1.5px,-1px)}}
+
+  .big{font-size:clamp(22px,4vw,34px);letter-spacing:.14em;line-height:1.8;color:#fff;
+    opacity:0;animation:fade 1.6s ease forwards}
+
+  button{font-family:var(--serif);font-size:14px;letter-spacing:.22em;color:var(--dim);
+    background:none;border:1px solid rgba(234,231,225,.2);padding:12px 30px;cursor:pointer;
+    transition:.35s;opacity:0;animation:fade 1.4s ease .4s forwards}
+  button:hover{color:var(--ink);border-color:rgba(234,231,225,.55)}
+
+  .esc{position:fixed;left:0;right:0;bottom:5vh;z-index:2;text-align:center;
+    font-size:11px;letter-spacing:.2em;color:var(--faint);pointer-events:none;
+    opacity:0;transition:opacity 1s}
+  .esc.on{opacity:1}
+
+  #lang{position:fixed;top:20px;right:24px;z-index:3;font-size:11px;letter-spacing:.18em;
+    color:var(--faint);background:none;border:none;cursor:pointer;padding:4px;
+    opacity:1;animation:none}
+  #lang:hover{color:var(--ink)}
+  .sp{height:14px}
+</style>
+</head>
+<body>
+<div id="vig"></div>
+<div id="chapter"></div>
+<button id="lang">EN</button>
+<div class="esc" id="esc"></div>
+<div id="stage"></div>
+
+<script>
+/* ============================================================
+   恐惧 — 第四章 · 导入页
+   警告 → 倒数 → 假重启 → 归零，什么都没有 → 重新定义。
+   恐惧不是被吓到（外部/被动），是你自己预演了一场没发生的灾难（内部/预测）。
+   —— 全部力气省下来喂给结尾那句「什么都没有」。零音效，只用暗角和留白。
+   ============================================================ */
+
+/* ---------- 计时（全部可调，成败在这里）---------- */
+const T = {
+  introDelay: 1300,   // 顶部章节标题先停留一下，再落出「5秒后…」
+  warnGap:    1700,   // 警告每行间隔
+  beforeCount:1500,   // 最后一行警告 → 起倒数
+  tick:       1000,   // 每个数字停留
+  holdOne:    1100,   // 第一轮数到 1 后的悬停
+  fakeGap:    1700,   // 假重启每句
+  beforeCount2:900,   // 假重启 → 第二轮倒数
+  nothing:    3200,   // 归零后的纯黑静默（最关键的一段）
+  reframeGap: 2100    // 结尾每句浮出间隔
+};
+const COUNT1 = [5,4,3,2,1];
+const COUNT2 = [3,2,1];
+
+/* ---------- 文案 ---------- */
+let L = window.__FEAR_LANG || localStorage.getItem("fear-lang") || (/^zh/i.test(navigator.language||"") ? "zh" : "en");
+const X = () => TXT[L];
+const TXT = {
+zh:{
+  lang:"EN",
+  gate:["第 四 章","关 于 恐 惧。"],
+  gateBtn:"我 准 备 好 了",
+  escHint:"撑不住，按 ESC",
+  warn:[
+    "5 秒之后，这个屏幕上会出现一样东西。",
+    "它会很突然。它会很响。",
+    "你可能会想立刻别过头去。",
+    ['dim',"撑不住的话，随时可以按 ESC 离开。"]
+  ],
+  fake:["…… 还 没。","再 等 一 下。"],
+  reframe:[
+    "什么都没有。",
+    "没有东西弹出来。从头到尾，都没有。",
+    "可是刚才那几秒——<br>你的心跳，你绷紧的肩膀，你屏住的那口气——<br>全是真的。",
+    "<b>恐惧是真的。<br>威胁，是你自己造的。</b>",
+    "你刚才怕的，<br>是一个<em>从不存在</em>的东西。"
+  ],
+  reverse:"你以为恐惧是外面的东西扑向你。<br>其实是你自己，<b>预演了一场没有发生的灾难</b>。",
+  contBtn:"继 续",
+  bail:[
+    "你按了 ESC。",
+    "你逃开了。",
+    "可是——刚才没有任何东西要出现。<br>从头到尾都没有。",
+    "你逃的，是一个<em>不存在</em>的东西。",
+    "<b>这就是恐惧：<br>它不需要真的有威胁，<br>就能让你转身就跑。</b>"
+  ]
+},
+en:{
+  lang:"中文",
+  gate:["CHAPTER FOUR","ON FEAR."],
+  gateBtn:"I ' M   R E A D Y",
+  escHint:"press ESC if it's too much",
+  warn:[
+    "In 5 seconds, something will appear on this screen.",
+    "It will be sudden. It will be loud.",
+    "You may want to look away.",
+    ['dim',"If it's too much, you can press ESC to leave, anytime."]
+  ],
+  fake:["… not yet.","wait for it."],
+  reframe:[
+    "Nothing.",
+    "Nothing appeared. Not once, the whole time.",
+    "But those few seconds just now —<br>your heartbeat, your tightened shoulders, the breath you held —<br>all of it was real.",
+    "<b>The fear was real.<br>The threat, you made yourself.</b>",
+    "What you were afraid of<br>was a thing that <em>never existed</em>."
+  ],
+  reverse:"You think fear is something out there, lunging at you.<br>It's you — <b>rehearsing a disaster that never happens</b>.",
+  contBtn:"CONTINUE",
+  bail:[
+    "You pressed ESC.",
+    "You fled.",
+    "But — nothing was ever going to appear.<br>Not once, the whole time.",
+    "You ran from a thing that <em>doesn't exist</em>.",
+    "<b>That's fear:<br>it doesn't need a real threat<br>to make you turn and run.</b>"
+  ]
+}
+};
+
+/* ---------- 骨架 ---------- */
+const el = document.getElementById("stage");
+const vig = document.getElementById("vig");
+const $ = id => document.getElementById(id);
+const S = { canBail:false };
+
+let timers=[];
+const after=(ms,fn)=>{ const id=setTimeout(()=>{ timers=timers.filter(t=>t!==id); fn(); },ms); timers.push(id); return id; };
+const clearAll=()=>{ timers.forEach(clearTimeout); timers=[]; };
+const setEsc=on=>{ const e=$("esc"); e.textContent=on?X().escHint:""; e.classList.toggle("on",on); };
+const vigReset=()=>{ vig.className=""; };
+const setChapter = ()=>{
+  const c=$("chapter");
+  if(!c) return;
+  c.textContent = X().gate[0];
+  c.classList.remove("show");
+  void c.offsetWidth;
+  c.classList.add("show");
+};
+
+// 逐行浮出，累积不消失
+function sequence(lines, gap, done){
+  el.innerHTML = `<div class="stack" id="stack"></div>`;
+  let i=0;
+  const step=()=>{
+    if(i>=lines.length){ if(done) after(gap,done); return; }
+    let cls="ln", html=lines[i];
+    if(Array.isArray(html)){ cls+=" "+html[0]; html=html[1]; }
+    const p=document.createElement("p"); p.className=cls; p.innerHTML=html;
+    $("stack").appendChild(p);
+    i++; after(gap,step);
+  };
+  step();
+}
+
+/* ---------- 幕次 ---------- */
+function scrIntro(){
+  clearAll(); vigReset(); setEsc(false); S.canBail=false;
+  setChapter();
+  el.innerHTML = "";
+  after(T.introDelay, scrWarn);
+}
+
+function scrWarn(){
+  S.canBail=true; setEsc(true);
+  vig.className="breathe";
+  sequence(X().warn, T.warnGap, ()=> after(T.beforeCount, ()=>scrCount(1)));
+}
+
+function scrCount(pass){
+  const seq = pass===1 ? COUNT1 : COUNT2;
+  vig.className="tight";              // 黑暗收紧
+  let i=0;
+  const tick=()=>{
+    if(i>=seq.length){
+      if(pass===1) return after(T.holdOne, scrFake);
+      return scrNothing();
+    }
+    const n=seq[i];
+    const jit = n<=2 ? " jit" : "";   // 越接近，越抖
+    const panic = pass===2 ? " panic" : "";
+    el.innerHTML = `<div class="num${jit}${panic}">${n}</div>`;
+    i++; after(T.tick, tick);
+  };
+  tick();
+}
+
+function scrFake(){
+  sequence(X().fake, T.fakeGap, ()=> after(T.beforeCount2, ()=>scrCount(2)));
+}
+
+// 归零：什么都没有。暗角松开，纯黑静默。
+function scrNothing(){
+  S.canBail=false; setEsc(false);
+  vigReset();
+  el.innerHTML = "";
+  after(T.nothing, scrReframe);
+}
+
+function scrReframe(){
+  const lines = [...X().reframe, ""/*空一拍*/, ['big', X().reverse]];
+  el.innerHTML = `<div class="stack" id="stack"></div>`;
+  let i=0;
+  const step=()=>{
+    if(i>=lines.length){ after(T.reframeGap, showCont); return; }
+    let item=lines[i];
+    if(item!==""){
+      let cls="ln", html=item;
+      if(Array.isArray(item)){ cls = item[0]==="big" ? "big" : "ln "+item[0]; html=item[1]; }
+      const p=document.createElement("p"); p.className=cls; p.innerHTML=html;
+      $("stack").appendChild(p);
+    }
+    i++; after(T.reframeGap, step);
+  };
+  step();
+}
+function showCont(){
+  const b=document.createElement("button"); b.id="cont"; b.textContent=X().contBtn;
+  b.style.marginTop="10px"; $("stack").appendChild(b);
+  b.onclick=()=>{ el.innerHTML=`<div class="stack"><p class="ln dim">${L==="zh"?"（本章从这里开始）":"(the chapter begins here)"}</p></div>`; };
+}
+
+// ESC 逃生 —— 同时是「你被不存在的东西吓到要逃」的证据
+function scrBail(){
+  S.canBail=false; setEsc(false); vigReset();
+  el.innerHTML="";
+  after(600, ()=> sequence(X().bail, T.reframeGap, ()=> after(T.reframeGap, showCont)));
+}
+
+/* ---------- 启动 ---------- */
+document.documentElement.lang = L==="zh" ? "zh-CN" : "en";
+setChapter();
+$("lang").textContent = X().lang;
+function setLang(next, syncApp=true){
+  if(next===L) return;
+  L = next;
+  localStorage.setItem("fear-lang", L);
+  window.__FEAR_LANG = L;
+  document.documentElement.lang = L==="zh"?"zh-CN":"en";
+  $("lang").textContent = X().lang;
+  setChapter();
+  if(syncApp && typeof window.__FEAR_SET_APP_LANG === "function") {
+    window.__FEAR_SET_APP_LANG(L);
+  }
+  scrIntro();
+}
+
+$("lang").onclick = ()=>setLang(L==="zh"?"en":"zh");
+window.__FEAR_API = {
+  setLang: next => setLang(next, false),
+  destroy: () => {
+    // no-op hook for host cleanup symmetry
+  }
+};
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape" && S.canBail){ clearAll(); scrBail(); }
+});
+scrIntro();
+</script>
+</body>
+</html>

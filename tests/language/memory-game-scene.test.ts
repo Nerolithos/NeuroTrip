@@ -16,6 +16,7 @@ test('memory-game scene is routed and hosts Memory_game html in full-screen cont
   assert.match(appSource, /\/scene\/memory-game/)
   assert.match(sceneSource, /Memory_game\.html\?raw/)
   assert.match(sceneSource, /memory-game-experience/)
+  assert.match(sceneSource, /window\.__MEMORY_GAME_CONTINUE_PATH = '\/scene\/chapter-iv'/)
   assert.match(sceneSource, /window\.__MEMORY_GAME_NAVIGATE/)
   assert.match(sceneSource, /window\.__MEMORY_GAME_SET_APP_LANG/)
   assert.match(sceneSource, /window\.__MEMORY_GAME_API\?\.setLang/)

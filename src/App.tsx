@@ -16,6 +16,7 @@ import { VisualSystemsConsole } from './scenes/VisualSystemsConsole/VisualSystem
 import { LanguageAreaScene } from './scenes/LanguageAreaScene/LanguageAreaScene'
 import { RevLingualScene } from './scenes/RevLingualScene/RevLingualScene'
 import { MemoryGameScene } from './scenes/MemoryGameScene/MemoryGameScene'
+import { FearScene } from './scenes/FearScene/FearScene'
 import './styles/app.css'
 
 const AppRoutes = () => {
@@ -40,6 +41,8 @@ const AppRoutes = () => {
       <Route path="/hippocampus" element={<Navigate to="/scene/hippocampus" replace />} />
       <Route path="/scene/memory-game" element={<MemoryGameScene />} />
       <Route path="/memory-game" element={<Navigate to="/scene/memory-game" replace />} />
+      <Route path="/scene/chapter-iv" element={<FearScene />} />
+      <Route path="/chapter-iv" element={<Navigate to="/scene/chapter-iv" replace />} />
       <Route path="/scene/default-mode-network" element={<DefaultModeScene />} />
       <Route path="/exit" element={<ExitScene />} />
       <Route path="/sources" element={<SourcesScene />} />

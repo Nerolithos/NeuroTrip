@@ -43,9 +43,9 @@ const chapterEntries: ChapterEntry[] = [
     key: 'fear',
     titleZh: '第四章 · 恐惧',
     titleEn: 'Chapter IV · Fear',
-    summaryZh: '开发中：即将开放',
-    summaryEn: 'In progress: coming soon',
-    route: null,
+    summaryZh: '已开放：恐惧章节导入页',
+    summaryEn: 'Available: Fear chapter intro page',
+    route: '/scene/chapter-iv',
   },
   {
     key: 'sleep',
