@@ -100,6 +100,39 @@ const tierFromScore = (score: number): CardTier => {
   return 'tier-0-10'
 }
 
+const clamp01 = (value: number) => {
+  if (!Number.isFinite(value)) return 0
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return Number(value.toFixed(2))
+}
+
+const calibrateAssociationScore = (input: {
+  llmScore: number
+  reason: string
+}) => {
+  const reasonNormalized = (input.reason || '').toLowerCase()
+  const hasStrongBridgeCue = /(direct|functional|function|control|input|switch|interface|device|operate|canonical|功能|控制|开关|输入|设备|操作|规范|绑定)/.test(reasonNormalized)
+  const hasWeakCue = /(metaphor|symbol|cultural|theme|association|隐喻|象征|文化|语境|联想)/.test(reasonNormalized)
+  const hasUncertainCue = /(insufficient|uncertain|not enough|unclear|不确定|证据不足|难以判断|信息不足)/.test(reasonNormalized)
+  const hasCanonicalCue = /(canonical|fixed|strict|direct function|规范|固定搭配|直接功能|强绑定)/.test(reasonNormalized)
+
+  let score = input.llmScore
+
+  if (hasStrongBridgeCue) score += 0.03
+  if (hasWeakCue && !hasStrongBridgeCue) score -= 0.05
+  if (hasUncertainCue) score = Math.min(score, 0.35)
+
+  if (input.llmScore > 0.65 && !hasStrongBridgeCue) {
+    score = Math.min(score, 0.46)
+  }
+  if (input.llmScore > 0.85 && !hasCanonicalCue) {
+    score = Math.min(score, 0.78)
+  }
+
+  return clamp01(score)
+}
+
 export const LanguageAreaScene = () => {
   const language = useUiLanguageStore((state) => state.language)
   const isZh = language === 'zh'
@@ -257,7 +290,12 @@ export const LanguageAreaScene = () => {
         isZh,
       })
 
-      setLlmRealityScores((prev) => ({ ...prev, [card.id]: cardResult.score }))
+      const calibratedScore = calibrateAssociationScore({
+        llmScore: cardResult.score,
+        reason: aiReason,
+      })
+
+      setLlmRealityScores((prev) => ({ ...prev, [card.id]: calibratedScore }))
       setCardReasons((prev) => ({ ...prev, [card.id]: aiReason }))
       setCardStages((prev) => ({ ...prev, [card.id]: 'done' }))
       setProcessedCount(index + 1)
