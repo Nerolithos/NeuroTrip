@@ -258,6 +258,12 @@ const buildReconstructErrorMessage = (isZh: boolean, failure: ReconstructFailure
       : `Image endpoint 400: request payload or model is invalid. Try another model or inspect proxy payload.${detail ? ` Detail: ${detail}` : ''}`
   }
 
+  if (status === 405) {
+    return isZh
+      ? `做图接口 405：${endpoint} 不接受 POST。通常是 Functions 路由未生效或部署平台路径不匹配。请优先检查 /api/openrouter 的函数部署与路由映射。${detail ? ` 详情：${detail}` : ''}`
+      : `Image endpoint 405: ${endpoint} does not accept POST. This usually means Functions routing is not active or deployment paths are mismatched. Check /api/openrouter deployment and route mapping first.${detail ? ` Detail: ${detail}` : ''}`
+  }
+
   if (status === 0) {
     return isZh
       ? `做图请求超时或网络中断。请稍后重试。${detail ? ` 详情：${detail}` : ''}`
@@ -371,7 +377,42 @@ const requestReconstructedImage = async (input: {
 }): Promise<ReconstructResult> => {
   const { config, models, prompt, signal, isZh } = input
   const headers = buildOpenRouterHeaders(config)
-  let lastFailure: ReconstructFailure = { ok: false }
+  let lastFailure: ReconstructFailure | null = null
+  const preferredEndpoint = config.endpoint
+
+  const failurePriority = (status?: number) => {
+    if (status === 400) return 8
+    if (status === 403) return 7
+    if (status === 405) return 6
+    if (status === 404) return 5
+    if (status === 422) return 4
+    if (status === 0) return 3
+    if (typeof status === 'number') return 2
+    return 1
+  }
+
+  const rememberFailure = (failure: ReconstructFailure) => {
+    if (!lastFailure) {
+      lastFailure = failure
+      return
+    }
+
+    const currentIsPreferred = lastFailure.endpoint === preferredEndpoint
+    const nextIsPreferred = failure.endpoint === preferredEndpoint
+
+    if (nextIsPreferred && !currentIsPreferred) {
+      lastFailure = failure
+      return
+    }
+    if (!nextIsPreferred && currentIsPreferred) {
+      return
+    }
+
+    if (failurePriority(failure.status) >= failurePriority(lastFailure.status)) {
+      lastFailure = failure
+    }
+  }
+
   const proxyEndpoints =
     config.mode === 'proxy-endpoint'
       ? buildProxyEndpointCandidates(config.endpoint)
@@ -424,30 +465,34 @@ const requestReconstructedImage = async (input: {
           }
         } else {
           const text = await imageResponse.text()
-          lastFailure = {
+          rememberFailure({
             ok: false,
             status: imageResponse.status,
             detail: compactErrorDetail(text),
             endpoint: imageEndpoint,
+          })
+
+          if (config.mode === 'proxy-endpoint' && imageResponse.status !== 404) {
+            break
           }
         }
 
         if (imageResponse.ok) {
-          lastFailure = {
+          rememberFailure({
             ok: false,
             status: 422,
             detail: 'Image response did not contain a usable image payload.',
             endpoint: imageEndpoint,
-          }
+          })
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
-          lastFailure = {
+          rememberFailure({
             ok: false,
             status: 0,
             detail: 'Request timeout',
             endpoint: imageEndpoint,
-          }
+          })
         }
         // continue to chat fallback for the same model.
       }
@@ -489,11 +534,15 @@ const requestReconstructedImage = async (input: {
 
         if (!chatResponse.ok) {
           const text = await chatResponse.text()
-          lastFailure = {
+          rememberFailure({
             ok: false,
             status: chatResponse.status,
             detail: compactErrorDetail(text),
             endpoint: chatEndpoint,
+          })
+
+          if (config.mode === 'proxy-endpoint' && chatResponse.status !== 404) {
+            break
           }
           continue
         }
@@ -505,19 +554,19 @@ const requestReconstructedImage = async (input: {
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
-          lastFailure = {
+          rememberFailure({
             ok: false,
             status: 0,
             detail: 'Request timeout',
             endpoint: chatEndpoint,
-          }
+          })
         }
         // try next endpoint or model
       }
     }
   }
 
-  return lastFailure
+  return lastFailure || { ok: false }
 }
 
 type Stage = 'ready' | 'observe' | 'round-1' | 'round-2' | 'complete'

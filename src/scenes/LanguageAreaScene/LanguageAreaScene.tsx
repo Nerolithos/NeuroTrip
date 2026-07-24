@@ -21,44 +21,52 @@ import hydrantImage from '../../../assets/hydrant.jpg'
 import brainImage from '../../../assets/brain.jpg'
 import mouseImage from '../../../assets/mouse.jpg'
 import constantinopleImage from '../../../assets/ Constantinople.jpg'
-import initMemoryMaleHackathon from '../../assets/init-memory/male-hackathon.webp'
-import initMemoryPerfumePoster from '../../assets/init-memory/perfume-poster.webp'
-import initMemoryOilPainting from '../../assets/init-memory/oil-painting.webp'
-import initMemoryLakeView from '../../assets/init-memory/lakeside-view.webp'
+import appleDeviceImage from '../../../assets/apple-device.jpg'
+import chargerImage from '../../../assets/charger.jpg'
+import trapImage from '../../../assets/trap.jpg'
+import toolboxImage from '../../../assets/toolbox.jpg'
+import computerMouseImage from '../../../assets/computer-mouse.jpg'
+import breadImage from '../../../assets/bread.jpg'
+import forestImage from '../../../assets/forest.jpg'
+import capsuleImage from '../../../assets/capsule.jpg'
+import antennaImage from '../../../assets/antenna.jpg'
+import mriImage from '../../../assets/MRI.jpg'
+import knifeImage from '../../../assets/knife.jpg'
+import lightningImage from '../../../assets/lightening.jpg'
 
 const realityCards: RealityImageCard[] = [
   { id: 'c01', label: 'fox', labelZh: '狐狸', imageUrl: foxImage, tags: ['animal', 'wildlife', 'predator'], description: 'fox in natural habitat' },
   { id: 'c02', label: 'cat', labelZh: '猫', imageUrl: catImage, tags: ['animal', 'pet', 'mammal'], description: 'domestic cat portrait' },
   { id: 'c03', label: 'apple fruit', labelZh: '苹果果实', imageUrl: appleImage, tags: ['food', 'fruit', 'nutrition'], description: 'red apple close-up' },
   { id: 'c04', label: 'annabergite', labelZh: '镍华', imageUrl: annImage, tags: ['mineral', 'annabergite', 'nickel'], description: 'green annabergite mineral sample' },
-  { id: 'c05', label: 'apple logo device', labelZh: '苹果品牌设备', imageUrl: initMemoryMaleHackathon, tags: ['tool', 'device', 'brand', 'technology'], description: 'laptop with apple logo' },
+  { id: 'c05', label: 'apple logo device', labelZh: '苹果品牌设备', imageUrl: appleDeviceImage, tags: ['tool', 'device', 'brand', 'technology'], description: 'laptop with apple logo' },
   {
     id: 'c06',
     label: 'eyjafjallajökull volcano',
-    labelZh: '冰岛艾雅法拉火山（eyjafjallajökull）',
+    labelZh: '冰岛艾雅法拉火山',
     imageUrl: volcanoImage,
     tags: ['danger', 'nature', 'geology', 'volcano', 'iceland'],
     description: 'Eyjafjallajökull volcano landscape in Iceland',
   },
-  { id: 'c07', label: 'charging cable', labelZh: '充电线', imageUrl: initMemoryPerfumePoster, tags: ['tool', 'device', 'technology'], description: 'usb charging cable' },
+  { id: 'c07', label: 'charging cable', labelZh: '充电线', imageUrl: chargerImage, tags: ['tool', 'device', 'technology'], description: 'usb charging cable' },
   { id: 'c08', label: 'AdventureX', labelZh: 'AdventureX', imageUrl: advxImage, tags: ['conference', 'tech', 'event', 'brand'], description: 'AdventureX visual identity image' },
-  { id: 'c09', label: 'trap', labelZh: '陷阱', imageUrl: initMemoryOilPainting, tags: ['danger', 'tool', 'mechanical'], description: 'spring-loaded trap' },
+  { id: 'c09', label: 'trap', labelZh: '陷阱', imageUrl: trapImage, tags: ['danger', 'tool', 'mechanical'], description: 'spring-loaded trap' },
   { id: 'c10', label: 'artichoke', labelZh: '菜蓟', imageUrl: artichokeImage, tags: ['food', 'vegetable', 'plant'], description: 'artichoke vegetable photo' },
-  { id: 'c11', label: 'toolkit', labelZh: '工具箱', imageUrl: initMemoryLakeView, tags: ['tool', 'hardware', 'repair'], description: 'toolbox with hand tools' },
+  { id: 'c11', label: 'toolkit', labelZh: '工具箱', imageUrl: toolboxImage, tags: ['tool', 'hardware', 'repair'], description: 'toolbox with hand tools' },
   { id: 'c12', label: 'brain model', labelZh: '大脑模型', imageUrl: brainImage, tags: ['organ', 'biology', 'science'], description: 'human brain model' },
   { id: 'c13', label: 'mouse animal', labelZh: '老鼠', imageUrl: mouseImage, tags: ['animal', 'wildlife', 'rodent'], description: 'small mouse in field' },
-  { id: 'c14', label: 'computer mouse', labelZh: '电脑鼠标', imageUrl: mouseImage, tags: ['tool', 'device', 'technology'], description: 'computer mouse on desk' },
-  { id: 'c15', label: 'bread', labelZh: '面包', imageUrl: artichokeImage, tags: ['food', 'meal', 'carb'], description: 'bread loaf on wooden board' },
-  { id: 'c16', label: 'lightning', labelZh: '闪电', imageUrl: volcanoImage, tags: ['danger', 'weather', 'energy'], description: 'lightning strike in storm' },
-  { id: 'c17', label: 'knife', labelZh: '刀具', imageUrl: hydrantImage, tags: ['tool', 'danger', 'kitchen'], description: 'kitchen knife close-up' },
+  { id: 'c14', label: 'computer mouse', labelZh: '电脑鼠标', imageUrl: computerMouseImage, tags: ['tool', 'device', 'technology'], description: 'computer mouse on desk' },
+  { id: 'c15', label: 'bread', labelZh: '面包', imageUrl: breadImage, tags: ['food', 'meal', 'carb'], description: 'bread loaf on wooden board' },
+  { id: 'c16', label: 'lightning', labelZh: '闪电', imageUrl: lightningImage, tags: ['danger', 'weather', 'energy'], description: 'lightning strike in storm' },
+  { id: 'c17', label: 'knife', labelZh: '刀具', imageUrl: knifeImage, tags: ['tool', 'danger', 'kitchen'], description: 'kitchen knife close-up' },
   { id: 'c18', label: 'nijigen', labelZh: '二次元', imageUrl: nijigenImage, tags: ['anime', 'illustration', 'culture', 'style'], description: '2D anime-style character visual' },
   { id: 'c19', label: '42', labelZh: '数字42', imageUrl: fortyTwoImage, tags: ['number', 'symbol', 'math', 'answer'], description: 'number 42 visual card' },
-  { id: 'c20', label: 'noodles', labelZh: '面条', imageUrl: initMemoryPerfumePoster, tags: ['food', 'meal', 'asian'], description: 'bowl of noodles' },
+  { id: 'c20', label: 'MRI', labelZh: 'MRI', imageUrl: mriImage, tags: ['medical', 'brain', 'imaging'], description: 'brain MRI scan image' },
   { id: 'c21', label: 'constantinople', labelZh: '君士坦丁堡', imageUrl: constantinopleImage, tags: ['city', 'history', 'culture', 'constantinople'], description: 'historical image of Constantinople' },
   { id: 'c22', label: 'fire extinguisher', labelZh: '灭火器', imageUrl: hydrantImage, tags: ['tool', 'safety', 'danger'], description: 'fire safety equipment image' },
-  { id: 'c23', label: 'tree forest', labelZh: '树与森林', imageUrl: foxImage, tags: ['nature', 'plant', 'ecology'], description: 'forest tree scene' },
-  { id: 'c24', label: 'capsule pill', labelZh: '胶囊', imageUrl: brainImage, tags: ['medicine', 'health', 'pharmacy'], description: 'capsule pills close-up' },
-  { id: 'c25', label: 'satellite dish', labelZh: '卫星天线', imageUrl: advxImage, tags: ['tool', 'device', 'communication'], description: 'satellite communication dish' },
+  { id: 'c23', label: 'tree forest', labelZh: '树与森林', imageUrl: forestImage, tags: ['nature', 'plant', 'ecology'], description: 'forest tree scene' },
+  { id: 'c24', label: 'capsule pill', labelZh: '胶囊', imageUrl: capsuleImage, tags: ['medicine', 'health', 'pharmacy'], description: 'capsule pills close-up' },
+  { id: 'c25', label: 'satellite dish', labelZh: '卫星天线', imageUrl: antennaImage, tags: ['tool', 'device', 'communication'], description: 'satellite communication dish' },
 ]
 
 type CardStage = 'neutral' | 'pending' | 'processing' | 'done' | 'fallback'
@@ -116,7 +124,7 @@ const calibrateAssociationScore = (input: {
   reason: string
 }) => {
   const reasonNormalized = (input.reason || '').toLowerCase()
-  const hasStrongBridgeCue = /(direct|functional|function|control|input|switch|interface|device|operate|canonical|功能|控制|开关|输入|设备|操作|规范|绑定)/.test(reasonNormalized)
+  const hasStrongBridgeCue = /(direct|functional|function|control|input|switch|interface|device|operate|canonical|risk|threat|danger|fear|功能|控制|开关|输入|设备|操作|规范|绑定|风险|威胁|危险|恐惧|灾害|灾难)/.test(reasonNormalized)
   const hasWeakCue = /(metaphor|symbol|cultural|theme|association|隐喻|象征|文化|语境|联想)/.test(reasonNormalized)
   const hasUncertainCue = /(insufficient|uncertain|not enough|unclear|不确定|证据不足|难以判断|信息不足)/.test(reasonNormalized)
   const hasCanonicalCue = /(canonical|fixed|strict|direct function|规范|固定搭配|直接功能|强绑定)/.test(reasonNormalized)
@@ -124,12 +132,10 @@ const calibrateAssociationScore = (input: {
   let score = input.llmScore
 
   if (hasStrongBridgeCue) score += 0.03
-  if (hasWeakCue && !hasStrongBridgeCue) score -= 0.05
+  if (hasWeakCue && !hasStrongBridgeCue && score < 0.7) score -= 0.05
   if (hasUncertainCue) score = Math.min(score, 0.35)
 
-  if (input.llmScore > 0.65 && !hasStrongBridgeCue) {
-    score = Math.min(score, 0.46)
-  }
+  // Keep high model confidence unless there is explicit uncertainty.
   if (input.llmScore > 0.85 && !hasCanonicalCue) {
     score = Math.min(score, 0.78)
   }
