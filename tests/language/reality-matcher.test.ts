@@ -162,4 +162,5 @@ test('requestRealityCardMatch prompt includes cultural and metaphor association 
   assert.ok(callCount >= 2)
   assert.match(capturedBody, /字面|文化|隐喻/)
   assert.match(capturedBody, /不得直接判为 0|不要直接判为 0|not assign 0/i)
+  assert.match(capturedBody, /复合词|固定搭配|器物|茶刀|Pu-erh|tea knife/i)
 })

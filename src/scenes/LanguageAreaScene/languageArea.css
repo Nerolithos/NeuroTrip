@@ -407,21 +407,22 @@
   filter: saturate(0.86) brightness(0.86);
 }
 
-.lang-reality-card.is-tier-20 {
-  opacity: 0.48;
-  border-color: rgba(82, 122, 136, 0.52);
+.lang-reality-card.is-tier-10-40 {
+  opacity: 0.56;
+  border-color: rgba(95, 140, 155, 0.58);
+  box-shadow: 0 0 0 1px rgba(90, 136, 152, 0.16) inset;
 }
 
-.lang-reality-card.is-tier-20 img {
-  filter: saturate(0.7) grayscale(0.28) brightness(0.74);
+.lang-reality-card.is-tier-10-40 img {
+  filter: saturate(0.78) grayscale(0.22) brightness(0.8);
 }
 
-.lang-reality-card.is-tier-0 {
+.lang-reality-card.is-tier-0-10 {
   opacity: 0.34;
   border-color: rgba(70, 104, 116, 0.44);
 }
 
-.lang-reality-card.is-tier-0 img {
+.lang-reality-card.is-tier-0-10 img {
   filter: saturate(0.42) grayscale(0.62) brightness(0.62);
 }
 

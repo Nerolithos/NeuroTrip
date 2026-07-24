@@ -116,7 +116,7 @@ const nodeById={};
 const N=G.nodes.map(nd=>{const o=Object.assign({},nd,{deg:0,x:0,y:0,vx:0,vy:0,fx:null,fy:null});nodeById[nd.id]=o;return o;});
 const links=G.links.map(l=>Object.assign({},l,{s:nodeById[l.s],t:nodeById[l.t]})).filter(l=>l.s&&l.t);
 links.forEach(l=>{l.s.deg++;l.t.deg++;});
-N.forEach(n=>{n.radius=6+Math.min(n.deg,8)*1.5;});
+N.forEach(n=>{n.radius=5.2+Math.min(n.deg,8)*1.25;});
 const ETYPES=[...new Set(links.map(l=>l.evidence_type))].sort((a,b)=>
   links.filter(l=>l.evidence_type===b).length-links.filter(l=>l.evidence_type===a).length);
 const active=new Set(ETYPES);
@@ -203,13 +203,13 @@ function simulate(iter){for(let k=0;k<iter;k++){
     for(let j=i+1;j<N.length;j++){const b=N[j];
       let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.01,d=Math.sqrt(d2),ux=dx/d,uy=dy/d;
       const rep=5600/d2;a.vx+=ux*rep;a.vy+=uy*rep;b.vx-=ux*rep;b.vy-=uy*rep;
-      const minD=(a.radius+b.radius)*1.45;
+      const minD=(a.radius+b.radius)*1.58;
       if(d<minD){const push=(minD-d)*.22;a.vx+=ux*push;a.vy+=uy*push;b.vx-=ux*push;b.vy-=uy*push;}
     }
     a.vx+=(W/2-a.x)*.0018;a.vy+=(H/2-a.y)*.0018;
   }
   for(const l of links){let dx=l.t.x-l.s.x,dy=l.t.y-l.s.y,d=Math.sqrt(dx*dx+dy*dy)+.01;
-    const f=(d-108)*.018;l.s.vx+=dx/d*f;l.s.vy+=dy/d*f;l.t.vx-=dx/d*f;l.t.vy-=dy/d*f;}
+    const f=(d-122)*.016;l.s.vx+=dx/d*f;l.s.vy+=dy/d*f;l.t.vx-=dx/d*f;l.t.vy-=dy/d*f;}
   for(const a of N){if(a.fx!=null){a.x=a.fx;a.y=a.fy;a.vx=a.vy=0;continue;}
     a.x+=a.vx*.5;a.y+=a.vy*.5;a.vx*=.84;a.vy*=.84;}}}   // 不硬夹边界，交给 fitView 缩放到视口
 
@@ -321,8 +321,8 @@ let anim=null;
 function resize(){const r=svg.getBoundingClientRect();W=r.width>50?r.width:900;H=r.height>50?r.height:600;
   resetZoom();}
 function init(){resize();N.forEach((n,i)=>{const a=i/N.length*6.28;
-  n.x=W/2+Math.cos(a)*Math.min(W,H)*0.35;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.3;});
-  simulate(720);fitView(56,54,34);render();}
+  n.x=W/2+Math.cos(a)*Math.min(W,H)*0.39;n.y=H/2+Math.sin(a)*Math.min(W,H)*0.34;});
+  simulate(720);fitView(68,66,44);render();}
 addEventListener("resize",()=>{const oW=W,oH=H;resize();if(oW>50&&oH>50)N.forEach(n=>{n.x*=W/oW;n.y*=H/oH;});render();});
 requestAnimationFrame(()=>requestAnimationFrame(init));
 </script>

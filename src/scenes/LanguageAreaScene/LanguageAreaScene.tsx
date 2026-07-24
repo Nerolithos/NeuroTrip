@@ -58,7 +58,7 @@ const realityCards: RealityImageCard[] = [
 ]
 
 type CardStage = 'neutral' | 'pending' | 'processing' | 'done' | 'fallback'
-type CardTier = 'neutral' | 'processing' | 'tier-100' | 'tier-80' | 'tier-60' | 'tier-40' | 'tier-20' | 'tier-0'
+type CardTier = 'neutral' | 'processing' | 'tier-100' | 'tier-80' | 'tier-60' | 'tier-40' | 'tier-10-40' | 'tier-0-10'
 
 const summarizeAssociationReason = (input: {
   rawReason: string
@@ -96,8 +96,8 @@ const tierFromScore = (score: number): CardTier => {
   if (score >= 0.8) return 'tier-80'
   if (score >= 0.6) return 'tier-60'
   if (score >= 0.4) return 'tier-40'
-  if (score >= 0.2) return 'tier-20'
-  return 'tier-0'
+  if (score >= 0.1) return 'tier-10-40'
+  return 'tier-0-10'
 }
 
 export const LanguageAreaScene = () => {
@@ -272,21 +272,21 @@ export const LanguageAreaScene = () => {
       fallbackCount > 0
         ?
         (isZh
-          ? `已逐张完成 ${realityCards.length} 张图片匹配，其中 ${fallbackCount} 张使用本地语义兜底。`
-          : `Processed all ${realityCards.length} images sequentially; ${fallbackCount} cards used local semantic fallback.`)
+          ? `已完成 ${realityCards.length} 张匹配，兜底 ${fallbackCount} 张。`
+          : `Processed ${realityCards.length} cards; fallback used on ${fallbackCount}.`)
         : (isZh
-          ? `已逐张完成 ${realityCards.length} 张图片语义联想匹配。`
-          : `Processed all ${realityCards.length} images sequentially with language-association reasoning.`),
+          ? `已完成 ${realityCards.length} 张语义联想匹配。`
+          : `Processed ${realityCards.length} cards with semantic association.`),
     )
   }, [isZh, labelInput, resolveRealityConfig])
 
   return (
     <SceneFrame
-      title={isZh ? 'Chapter II / 使用语言 USING LANGUAGE' : 'Chapter II / USING LANGUAGE'}
+      title={isZh ? '第二章 / 使用语言' : 'Chapter II / Using Language'}
       subtitle={
         isZh
-          ? '语言实验终端：标签匹配与知识图谱。'
-          : 'Language lab terminal: dynamic label matching and knowledge graph.'
+          ? '语言实验终端：输入文字并查看语义联想。'
+          : 'Language lab: type text and view semantic associations.'
       }
       previousPath="/scene/chapter-ii"
       nextPath="/scene/rev-lingual"
@@ -296,22 +296,22 @@ export const LanguageAreaScene = () => {
           <h2>{isZh ? '第一部分：使用语言' : 'Part I: Using Language'}</h2>
           <p>
             {isZh
-              ? 'One label, new reality / Language connectome'
-              : 'One label, new reality / Language connectome'}
+              ? '输入文字，AI 认为能联想到什么？'
+              : 'Type text. What will AI associate with it?'}
           </p>
         </div>
 
         <div className="lang-grid">
           <TerminalWindow
             id="L-01"
-            title={isZh ? 'One label, new reality（一个标签，重新组织现实）' : 'ONE LABEL, NEW REALITY'}
+            title={isZh ? '联想与语义' : 'Association & Semantics'}
             status="linked"
             className="lang-window-reality"
           >
             <p className="lang-note">
               {isZh
-                ? '输入任意标签（例如 fragile / ritual / healing / predator），按回车或点击按钮后，系统调用 OpenRouter 对 25 张真实图片做动态匹配。'
-                : 'Type any label (e.g. fragile/ritual/healing/predator), then press Enter or click the button to run dynamic OpenRouter matching for all 25 real images.'}
+                ? '输入文字，AI 认为能联想到什么？'
+                : 'Type text. What does AI associate it with?'}
             </p>
             <div className="lang-label-row">
               <input
@@ -333,7 +333,7 @@ export const LanguageAreaScene = () => {
                     void runRealityMatch()
                   }
                 }}
-                placeholder={isZh ? '输入任意标签，例如 predator / memory / ritual' : 'type any label, e.g. predator / memory / ritual'}
+                placeholder={isZh ? '输入文字，例如 茶 / 记忆 / 仪式' : 'Type text, e.g. tea / memory / ritual'}
               />
               <div className="lang-reality-toolbar">
                 <button type="button" className="lang-match-button" onClick={() => void runRealityMatch()}>
@@ -414,14 +414,14 @@ export const LanguageAreaScene = () => {
 
             <p className="lang-disclaimer">
               {isZh
-                ? '注：高亮强度来自语义模型估计（OpenRouter 或本地兜底），不代表神经影像真实分类结果。'
-                : 'Note: highlight strength is estimated by a semantic model (OpenRouter or local fallback), not a real neural measurement.'}
+                ? '提示：高亮表示语义联想强度。'
+                : 'Note: highlights indicate semantic association strength.'}
             </p>
           </TerminalWindow>
 
           <TerminalWindow
             id="L-02"
-            title={isZh ? '语言连接知识图谱' : 'LANGUAGE CONNECTOME'}
+            title={isZh ? '语言知识图谱' : 'Language Knowledge Graph'}
             status="linked"
             className="lang-window-graph"
           >
@@ -431,8 +431,8 @@ export const LanguageAreaScene = () => {
 
         <p className="lang-global-disclaimer">
           {isZh
-            ? '本页中的预测值、标签相似度和语义切换均为模型可视化，不是真实脑电测量。'
-            : 'All predictions, label affinity scores, and semantic switches here are model visualizations, not real EEG measurements.'}
+            ? '本页为语义联想可视化。'
+            : 'This page is a semantic-association visualization.'}
         </p>
       </section>
     </SceneFrame>
